@@ -1,0 +1,104 @@
+
+* uninno *
+
+0. Contents
+
+   1. Introduction
+   2. Copyright
+   3. Usage
+   4. Development
+   5. Links
+
+
+1. Introduction
+
+uninno is a portable unpacking tool for Inno Setup (IS) installers.
+
+Inno Setup is a popular tool for creating software package installers for the
+Microsoft Windows operating system. It was written in Delphi by Jordan Russell
+and released under an open source licence.
+
+Other unpacking tools exist, but they are based on the original Inno Setup
+source code. As the main intended target platform for such installers is
+Windows, not much effort has been made to make unpackers portable to other
+operating systems.
+
+There are however cases, where there is a legitimate motivation to extract the
+installable files on other platforms: One such example is the redistribution of
+older software, for which alternative or ported versions exist, but do not
+include required data files, as those are covered by a different copyright. See
+the links for (legal) distributors of such software.
+
+
+2. Copyright
+
+uninno and all its components are
+
+Copyright (C) 2012 by Gregor Riepl <onitake@gmail.com>
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+    
+    Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The data extraction routines are loosely based on the Inno Setup source code,
+but entirely rewritten due to large differences in programming languages and
+to improve portability. Some data structures may be reproduced in comments to
+help with reimplementation. These will be removed when implementation and
+testing is complete.
+See http://www.jrsoftware.org/files/is/license.txt for the Inno Setup license.
+
+
+3. Usage
+
+At its current stage, uninno is provided mainly as a library for dissecting
+and analyzing Inno Setup installers. For quick-and-dirty extraction, run
+the extract.pl tool on your installer:
+
+$ ./extract.pl setup.exe
+
+Output will be sent to /tmp/uninno.
+
+
+4. Development
+
+uninno consists of a bunch of Perl packages that handle different stages of the
+analysis and extractiong process. Dissection of the installer executable is
+provided by Win::Exe, which has some submodules for each of the PE's parts.
+Setup::Inno provides a frontend for parsing the setup.0 (metadata) and setup.1
+(compressed files) parts of the Inno Setup installer.
+
+To improve code reuse and facilitate handling of all the installer versions,
+all version-specific code is represented in a (linear) class hierarchy, spanning
+from a base class with simple code stubs over the first open source Inno Setup
+release (2.0.8) up to the most recent version. Each class in the hierarchy has
+override points that implement data structures, decompression and custom
+handling required for this version or its descendants.
+
+TODO: Provide a helper that walks the hierarchy and finds override points.
+
+
+5. Link
+
+Inno Setup: http://www.jrsoftware.org/isinfo.php
+innounp: http://innounp.sourceforge.net/
+Good Old Games (sells DRM-free digital copies of vintage PC games, uses
+Inno Setup 5.2.3): http://www.gog.com
+
