@@ -179,9 +179,5 @@ sub ReadFile {
 	return $self->{Struct}->ReadFile($self->{Input}, $setup0->{Header}, $location, $password);
 }
 
-sub GetFiletype {
-	my ($self, $filename, $type) = @_;
-}
-
 1;
 

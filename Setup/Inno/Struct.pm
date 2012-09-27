@@ -91,17 +91,13 @@ sub ParseOffsetTable {
 
 # Compression used for setup.0, for informational purposes
 # Subclasses override FieldReader to implement compression
-sub Compression0 {
-	return undef;
-}
+sub Compression0 { return undef; }
 
 # Compression used for files
 # Return undef if no compression is used/supported ('Stored' type)
 # Arguments:
 #   The setup.0 header
-sub Compression1 {
-	return undef;
-}
+sub Compression1 { return undef; }
 
 # Deoptimize executables (the transformation helps with compression)
 # Arguments:
