@@ -50,7 +50,7 @@ sub ReadString {
 	my ($self) = @_;
 	$self->{Reader}->read(my $buffer, 4) || die("Can't read string length");
 	my ($length) = unpack('L<', $buffer);
-	$self->{Reader}->read($buffer, $length);# || die("Can't read string");
+	($self->{Reader}->read($buffer, $length) == $length) || die("Can't read string");
 	return $buffer;
 }
 
@@ -59,7 +59,7 @@ sub ReadWideString {
 	my ($self) = @_;
 	$self->{Reader}->read(my $buffer, 4) || die("Can't read string length");
 	my ($length) = unpack('L<', $buffer);
-	$self->{Reader}->read($buffer, $length * 2) || die("Can't read string");
+	($self->{Reader}->read($buffer, $length * 2) == $length * 2) || die("Can't read string");
 	return decode('UTF-16LE', $buffer);
 }
 

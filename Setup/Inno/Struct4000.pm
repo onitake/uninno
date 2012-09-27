@@ -21,7 +21,7 @@ sub SetupBinaries {
 	$ret->{WizardImage} = $reader->ReadByteArray($wzimglength);
 	my $wzsimglength = $reader->ReadLongWord();
 	$ret->{WizardSmallImage} = $reader->ReadByteArray($wzsimglength);
-	if ($compression) {
+	if ($compression && $compression ne 'Lzma') {
 		my $cmpimglength = $reader->ReadLongWord();
 		$ret->{CompressImage} = $reader->ReadByteArray($cmpimglength);
 	}

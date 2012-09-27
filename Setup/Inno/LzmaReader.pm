@@ -7,7 +7,7 @@ use base qw(IO::File);
 use File::Temp;
 
 sub new {
-	my ($class, $reader) = @_;
+	my ($class, $reader, $size) = @_;
 
 	# Read and dissect header
 	$reader->read(my $header, 5) || die("Can't read LZMA header");
@@ -17,12 +17,22 @@ sub new {
 	my $lp = int($lclp / 9);
 	my $lc = $lclp - $lp * 9;
 
-	# Create temporary file and consume all data the reader can give us (not always a good idea)
+	# Create temporary file and consume all data the reader can give us (not always a good idea, so a maximum size argument is provided)
 	# Note that automatic file removal is disabled as this can cause problems (early deletion etc.)
 	my $temp = File::Temp->new(UNLINK => 0) || die("Can't create temp file");
-	while (!$reader->eof()) {
-		$reader->read(my $buffer, 4096) || die("Can't read from stream");
-		$temp->write($buffer) || die("Can't write to temp file");
+	if (defined($size)) {
+		while ($size) {
+			my $length = ($size > 4096) ? 4096 : $size;
+			my $rdbytes = $reader->read(my $buffer, $length);
+			($rdbytes == $length) || die("Didn't get all data from stream (expected $length, got $rdbytes)");
+			$size -= $rdbytes;
+			$temp->write($buffer) || die("Can't write to temp file");
+		}
+	} else {
+		while (!$reader->eof()) {
+			$reader->read(my $buffer, 4096) || die("Can't read from stream");
+			$temp->write($buffer) || die("Can't write to temp file");
+		}
 	}
 	my $tempfile = $temp->filename();
 	#$temp->close();
@@ -40,7 +50,7 @@ sub new {
 # And all this hackery so we can make sure the temp file gets destroyed at the right time...
 sub DESTROY {
 	my $self = shift;
-	unlink(*$self->{LzmaReaderTempFile});
+	unlink(*$self->{LzmaReaderTempFile}) || warn("Can't delete temporary file");
 	$self->SUPER::DESTROY($@);
 }
 

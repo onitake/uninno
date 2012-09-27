@@ -116,7 +116,9 @@ sub ReBlessWithVersionString {
 		$version .= defined($5) ? 'u' : '';
 		require "Setup/Inno/Struct$version.pm";
 		bless($self, "Setup::Inno::Struct$version");
+		return $version;
 	}
+	return '0000';
 }
 
 # Create a field reader from a file handle

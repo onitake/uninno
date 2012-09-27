@@ -8,6 +8,7 @@ use feature 'switch';
 use Fcntl;
 use IO::Uncompress::AnyInflate;
 use IO::Uncompress::Bunzip2;
+use IO::Uncompress::UnLzma;
 use Setup::Inno::LzmaReader;
 use constant {
 	ZLIBID => "zlb\x{1a}",
@@ -16,12 +17,16 @@ use constant {
 sub ReadFile {
 	my ($self, $input, $header, $location, $password) = @_;
 	
+	#use Data::Dumper;
+	#print Dumper $location;
+	
 	# Note: once we support decryption, make sure the password is interpreted as UTF-16LE
 	($location->{ChunkEncrypted} && !defined($password)) && die("File is encrypted, but no password was given");
 	
 	$input->seek($location->{StartOffset}, Fcntl::SEEK_CUR);
 	$input->read(my $buffer, 4) || die("Can't read compressed block magic");
 	($buffer eq ZLIBID) || die("Compressed block ID invalid");
+
 	my $reader;
 	given ($header->{CompressMethod}) {
 		when ('Zip') {
@@ -31,7 +36,7 @@ sub ReadFile {
 			$reader = IO::Uncompress::Bunzip2->new($input, Transparent => 0) || die("Can't create bzip2 reader");
 		}
 		when ('Lzma') {
-			$reader = Setup::Inno::LzmaReader->new($input) || die("Can't create LZMA reader");
+			$reader = Setup::Inno::LzmaReader->new($input, $location->{ChunkCompressedSize}) || die("Can't create LZMA reader");
 		}
 		default {
 			# Plain reader for stored mode
@@ -40,7 +45,7 @@ sub ReadFile {
 	}
 	
 	$reader->seek($location->{ChunkSuboffset}, Fcntl::SEEK_CUR);
-	$reader->read($buffer, $location->{OriginalSize}) || die("Can't uncompress file");
+	($reader->read($buffer, $location->{OriginalSize}) >= $location->{OriginalSize}) || die("Can't uncompress file");
 	
 	if ($location->{CallInstructionOptimized}) {
 		# We could just transform the whole data, but this will expose a flaw in the original algorithm:
