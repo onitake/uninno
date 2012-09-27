@@ -92,7 +92,23 @@ release (2.0.8) up to the most recent version. Each class in the hierarchy has
 override points that implement data structures, decompression and custom
 handling required for this version or its descendants.
 
-TODO: Provide a helper that walks the hierarchy and finds override points.
+To find the override point of a method in the hierarchy, use the following code:
+sub findovr {
+	my ($method, $basever) = @_;
+	require "Setup/Inno/Struct$basever.pm";
+	my @classes = ("Setup::Inno::Struct$basever");
+	while (@classes) {
+		my $class = shift(@classes);
+		no strict 'refs';
+		unshift(@classes, @{$class . '::ISA'});
+		my $fqn = $class . '::' . $method;
+		if (defined(&{$fqn})) {
+			return $class;
+		}
+	}
+}
+# Finds out which class overrides ParseOffsetTable, starting from Struct5200
+print(findovr('ParseOffsetTable', '5200') . "\n");
 
 
 5. Link
