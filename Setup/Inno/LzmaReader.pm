@@ -42,7 +42,7 @@ sub new {
 	#$temp->close();
 	
 	# Spawn subprocess for decompression
-	my $self = $class->SUPER::new("lzma --stdout --decompress --format=raw --lzma1=lc=$lc,lp=$lp,pb=$pb,dict=$dictsize $tempfile |") || die("Can't open decompressor");
+	my $self = $class->SUPER::new("xz --stdout --decompress --format=raw --lzma1=lc=$lc,lp=$lp,pb=$pb,dict=$dictsize $tempfile |") || die("Can't open decompressor");
 
 	# Store temp file name, this should work on IO::Handle type objects
 	*$self->{LzmaReaderTempFile} = $tempfile;

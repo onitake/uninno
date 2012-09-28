@@ -77,9 +77,9 @@ $ ./extract.pl setup.exe
 Output will be sent to /tmp/uninno.
 
 To support various compression methods, the Perl modules from IO-Compress are
-required, as well as the command line utility lzma from xz-utils. IO-Compress
+required, as well as the command line utility xz from xz-utils. IO-Compress
 does not work with non-standard or raw LZMA1 streams, so we have to rely on
-lzma for now.
+the external program for now.
 
 
 4. Development
@@ -121,7 +121,7 @@ print(findovr('ParseOffsetTable', '5200') . "\n");
 Many of the data blocks use LZMA compression, but in a slightly non-standard
 format that IO::Uncompress::UnLzma doesn't understand. Due to this, a little
 trick is being used: Data is first copied out to a temporary file, which is
-then streamed through the command line lzma utility from xz-utils. Regular
+then streamed through the command line xz program from xz-utils. Regular
 LZMA1 streams are prepended by a header containing the compression parameters,
 the dictionary size and a 64 bit length, which can be negative to signal an
 unknown stream size. The Inno Setup LZMA format starts with the same parameters,
