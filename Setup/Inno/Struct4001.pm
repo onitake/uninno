@@ -8,7 +8,6 @@ use feature 'switch';
 use Fcntl;
 use IO::Uncompress::AnyInflate;
 use IO::Uncompress::Bunzip2;
-use IO::Uncompress::UnLzma;
 use Setup::Inno::LzmaReader;
 use constant {
 	ZLIBID => "zlb\x{1a}",
