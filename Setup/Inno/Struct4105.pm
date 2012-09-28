@@ -7,7 +7,6 @@ use base qw(Setup::Inno::Struct4009);
 use Setup::Inno::BlockReader;
 use Setup::Inno::LzmaReader;
 use IO::File;
-use Data::Hexdumper;
 
 sub Compression1 {
 	my ($self, $header) = @_;

@@ -67,11 +67,11 @@ package Win::Exe::Table::Resource;
 use strict;
 use Encode qw(decode);
 use Win::Exe::Util;
-use File::Type;
+#use File::Type;
 use Data::Dumper;
 
 use constant {
-	FileType => File::Type->new(),
+	#FileType => File::Type->new(),
 	ResourceTypes => {
 		Accelerator => 9, # Accelerator table.
 		AniCursor => 21, # Animated cursor.

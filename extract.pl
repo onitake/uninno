@@ -4,9 +4,6 @@ use strict;
 use warnings;
 use diagnostics;
 use Setup::Inno;
-use Data::Dumper;
-use Data::Hexdumper;
-use File::Type;
 use IO::File;
 use File::Basename;
 
@@ -19,8 +16,6 @@ my $filename = $ARGV[0];
 my $inno = Setup::Inno->new($filename);
 
 print("Installer version: " . $inno->Version() . "\n");
-#print Dumper $inno->FileLocations();
-#$inno->Setup0();
 
 mkdir("/tmp/uninno/");
 for (my $i = 0; $i < $inno->FileCount(); $i++) {
@@ -35,5 +30,3 @@ for (my $i = 0; $i < $inno->FileCount(); $i++) {
 	}
 }
 
-#my $file = $inno->ReadFile(822);
-#print $file;

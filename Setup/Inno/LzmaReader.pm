@@ -16,11 +16,14 @@ sub new {
 	my $lclp = $lclppb - $pb * 45;
 	my $lp = int($lclp / 9);
 	my $lc = $lclp - $lp * 9;
-
-	# Create temporary file and consume all data the reader can give us (not always a good idea, so a maximum size argument is provided)
+	
+	# Create temporary file and consume data
 	# Note that automatic file removal is disabled as this can cause problems (early deletion etc.)
 	my $temp = File::Temp->new(UNLINK => 0) || die("Can't create temp file");
 	if (defined($size)) {
+		# Subtract header first
+		$size -= 5;
+		# Consume as much as we're allowed to
 		while ($size) {
 			my $length = ($size > 4096) ? 4096 : $size;
 			my $rdbytes = $reader->read(my $buffer, $length);
@@ -29,6 +32,7 @@ sub new {
 			$temp->write($buffer) || die("Can't write to temp file");
 		}
 	} else {
+		# Consume everything the input gives us
 		while (!$reader->eof()) {
 			$reader->read(my $buffer, 4096) || die("Can't read from stream");
 			$temp->write($buffer) || die("Can't write to temp file");

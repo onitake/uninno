@@ -76,6 +76,11 @@ $ ./extract.pl setup.exe
 
 Output will be sent to /tmp/uninno.
 
+To support various compression methods, the Perl modules from IO-Compress are
+required, as well as the command line utility lzma from xz-utils. IO-Compress
+does not work with non-standard or raw LZMA1 streams, so we have to rely on
+lzma for now.
+
 
 4. Development
 
@@ -91,6 +96,9 @@ from a base class with simple code stubs over the first open source Inno Setup
 release (2.0.8) up to the most recent version. Each class in the hierarchy has
 override points that implement data structures, decompression and custom
 handling required for this version or its descendants.
+
+Version numbers are coded in 4 digits: x.y.z -> xyzz. The last version part has
+two digits and is zero padded. Example: 2.0.8 -> 2008
 
 To find the override point of a method in the hierarchy, use the following code:
 sub findovr {
@@ -110,11 +118,21 @@ sub findovr {
 # Finds out which class overrides ParseOffsetTable, starting from Struct5200
 print(findovr('ParseOffsetTable', '5200') . "\n");
 
+Many of the data blocks use LZMA compression, but in a slightly non-standard
+format that IO::Uncompress::UnLzma doesn't understand. Due to this, a little
+trick is being used: Data is first copied out to a temporary file, which is
+then streamed through the command line lzma utility from xz-utils. Regular
+LZMA1 streams are prepended by a header containing the compression parameters,
+the dictionary size and a 64 bit length, which can be negative to signal an
+unknown stream size. The Inno Setup LZMA format starts with the same parameters,
+but leaves out the stream size. IO::Uncompress::UnLzma seems to be under
+development, so compatibility with raw streams is possible in the future.
 
-5. Link
+
+5. Links
 
 Inno Setup: http://www.jrsoftware.org/isinfo.php
 innounp: http://innounp.sourceforge.net/
-Good Old Games (sells DRM-free digital copies of vintage PC games, uses
-Inno Setup 5.2.3): http://www.gog.com
+Good Old Games: http://www.gog.com (they sell DRM-free digital copies of vintage
+PC games, their installer is built with Inno Setup 5.2.3)
 
