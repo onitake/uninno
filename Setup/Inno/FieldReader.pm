@@ -7,7 +7,7 @@ use overload '""' => \&describe;
 
 sub new {
 	my ($class, $data) = @_;
-	my @self = unpack('C', $data);
+	my @self = unpack('C*', $data);
 	return bless(\@self, $class);
 }
 
@@ -28,6 +28,15 @@ sub set {
 sub describe {
 	my ($self) = @_;
 	return unpack('B*', join('', @{$self}));
+}
+
+sub match {
+	my ($self, $fields) = @_;
+	my $ret = { };
+	for (my $i = 0; $i < @{$fields}; $i++) {
+		$ret->{$fields->[$i]} = $self->get($i);
+	}
+	return $ret;
 }
 
 package Setup::Inno::FieldReader;
@@ -68,32 +77,64 @@ sub ReadWideString {
 # value determining the number of bits required.
 # Arguments:
 #   The number of choices (bits) in the set
+#   (optional) An arrayref of field names
 # Return:
 #   Set object, supporting get(bit #) and set(bit #, value) methods
+#   or (if fields names given)
+#   A hashref containing <field name> => <value> pairs
 # Example:
 #   Bitfield : set of Char;
 #   The maximum value for Char is 255, so 256 bits are required, corresponding to 32 bytes.
 sub ReadSet {
-	my ($self, $bits) = @_;
+	my ($self, $fields) = @_;
+	my $bits;
+	if (ref($fields) eq 'ARRAY') {
+		$bits = @{$fields};
+	} else {
+		$bits = $fields;
+	}
 	my $bytes = ceil($bits / 8);
 	$self->{Reader}->read(my $buffer, $bytes) || die("Can't read set");
-	return Setup::Inno::Set->new($buffer);
+	my $set = Setup::Inno::Set->new($buffer);
+	if (ref($fields) eq 'ARRAY') {
+		return $set->match($fields);
+	} else {
+		return $set;
+	}
 }
 
 # Reads a Delphi Enum
 # The storage required for Enums depends on the number of enumeration values.
 # Arguments:
-#   The number of enumerated values
+#   The number of enumerated values (choices)
+#   or
+#   An arrayref of enumerated names
+# Return:
+#   The enumerated value
+#   or (if names were given)
+#   The enumerated name
 sub ReadEnum {
-	my ($self, $values) = @_;
-	if ($values - 1 <= 255) {
-		return $self->ReadByte();
-	} elsif ($values - 1 <= 65535) {
-		return $self->ReadWord();
-	} elsif ($values - 1 <= 4294967295) {
-		return $self->ReadLongWord();
+	my ($self, $names) = @_;
+	my $values;
+	if (ref($names) eq 'ARRAY') {
+		$values = @{$names};
 	} else {
-		return $self->ReadInt64();
+		$values = $names;
+	}
+	my $value;
+	if ($values - 1 <= 255) {
+		$value = $self->ReadByte();
+	} elsif ($values - 1 <= 65535) {
+		$value = $self->ReadWord();
+	} elsif ($values - 1 <= 4294967295) {
+		$value = $self->ReadLongWord();
+	} else {
+		$value = $self->ReadInt64();
+	}
+	if (ref($names) eq 'ARRAY') {
+		return $names->[$value];
+	} else {
+		return $value;
 	}
 }
 

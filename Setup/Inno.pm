@@ -88,7 +88,7 @@ sub Setup0 {
 		$self->{Setup0}->{UninstallRun} = $self->{Struct}->SetupRun($reader, $self->{Setup0}->{Header}->{NumUninstallRunEntries});
 		$self->{Setup0}->{Binaries} = $self->{Struct}->SetupBinaries($reader, $self->{Struct}->Compression1($self->{Setup0}->{Header}));
 		# Get the current location so we can seek to the locations list later.
-		# They are stored in their own LZMA stream.
+		# It's stored in its own LZMA stream.
 		$self->{Setup0}->{OffsetLocations} = $self->{Input}->tell();
 	}
 	return $self->{Setup0};
@@ -161,8 +161,8 @@ sub FileInfo {
 	return {
 		Size => $location->{OriginalSize},
 		Date => $location->{TimeStamp},
-		Compressed => $location->{ChunkCompressed},
-		Encrypted => $location->{ChunkEncrypted},
+		Compressed => $location->{Flags}->{ChunkCompressed},
+		Encrypted => $location->{Flags}->{ChunkEncrypted},
 		Type => $type,
 		OriginalName => $file->{DestName},
 		Name => $name,

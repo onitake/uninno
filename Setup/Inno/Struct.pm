@@ -55,7 +55,7 @@ sub new {
 # Override this method if your class name does not follow the usual scheme
 sub Version {
 	my ($self) = @_;
-	if (ref($self) =~ /^Setup::Inno::Struct([0-9]{4})$/) {
+	if (ref($self) =~ /^Setup::Inno::Struct([0-9]{4}u?)$/) {
 		return $1;
 	}
 	return '0000';
