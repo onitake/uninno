@@ -16,6 +16,7 @@ use constant {
 	UninstallerMsgTailID => 0x67734D49,
 	ExeHeaderLength => 8,
 	DefaultUninstallExeName => "uninstall.exe",
+	DefaultRegSvrExeName => "regsvr.exe",
 };
 
 sub new {
@@ -151,6 +152,14 @@ sub FileInfo {
 				$name = $file->{DestName};
 			} else {
 				$name = DefaultUninstallExeName;
+			}
+		}
+		when ('RegSvrExe') {
+			$type = 'RegSvrExe';
+			if ($file->{DestName}) {
+				$name = $file->{DestName};
+			} else {
+				$name = DefaultRegSvrExeName;
 			}
 		}
 		default {

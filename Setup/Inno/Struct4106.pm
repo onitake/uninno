@@ -5,9 +5,7 @@ package Setup::Inno::Struct4106;
 use strict;
 use base qw(Setup::Inno::Struct4105);
 
-sub Compression0 {
-	return 'CompressedBlockReader';
-}
+# FieldReader was overridden in Struct4105, shouldn't it be here?
 
 1;
 

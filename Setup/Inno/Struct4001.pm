@@ -28,7 +28,7 @@ sub ReadFile {
 
 	my $reader;
 	if ($location->{Flags}->{ChunkCompressed}) {
-		given ($header->{CompressMethod}) {
+		given ($self->Compression1($header)) {
 			when ('Zip') {
 				$reader = IO::Uncompress::AnyInflate->new($input, Transparent => 0) || die("Can't create zlib reader");
 			}
@@ -36,7 +36,7 @@ sub ReadFile {
 				$reader = IO::Uncompress::Bunzip2->new($input, Transparent => 0) || die("Can't create bzip2 reader");
 			}
 			when ('Lzma') {
-				$reader = Setup::Inno::LzmaReader->new($input, $location->{ChunkCompressedSize}) || die("Can't create LZMA reader");
+				$reader = Setup::Inno::LzmaReader->new($input, $location->{ChunkCompressedSize}) || die("Can't create lzma reader");
 			}
 			default {
 				# Plain reader for stored mode

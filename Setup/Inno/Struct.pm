@@ -89,10 +89,6 @@ sub ParseOffsetTable {
 	# No-op
 }
 
-# Compression used for setup.0, for informational purposes
-# Subclasses override FieldReader to implement compression
-sub Compression0 { return undef; }
-
 # Compression used for files
 # Return undef if no compression is used/supported ('Stored' type)
 # Arguments:
@@ -110,15 +106,19 @@ sub TransformCallInstructions {
 
 sub ReBlessWithVersionString {
 	my ($self, $verstr) = @_;
-	if ($verstr =~ /\(([0-9])\.([0-9])\.([0-9])([0-9])?(u)?\)/) {
+	if ($verstr =~ /\(([0-9])\.([0-9])\.([0-9])([0-9])?([a-z])?\)/) {
 		my $version = "$1$2";
 		$version .= defined($4) ? "$3$4" : "0$3";
-		$version .= defined($5) ? 'u' : '';
+		$version .= (defined($5) && $5 eq 'u') ? 'u' : '';
 		require "Setup/Inno/Struct$version.pm";
 		bless($self, "Setup::Inno::Struct$version");
 		return $version;
+	} elsif ($verstr =~ /My Inno Setup Extensions Setup Data \(3.0.6.[12]\)/) {
+		# Martijn Laan's extensions, unsupported for now
+		# Bless/return '3008' here and implement Struct30008.pm once you support them
+		die("Unsupported version: $verstr");
 	}
-	return '0000';
+	die("Unsupported version: $verstr");
 }
 
 # Create a field reader from a file handle
