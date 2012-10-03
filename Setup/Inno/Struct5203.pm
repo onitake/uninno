@@ -8,21 +8,6 @@ use Encode;
 use DateTime;
 
 =comment
-  TSetupVersionData = packed record
-    WinVersion, NTVersion: Cardinal;
-    NTServicePack: Word;
-  end;
-=cut
-sub ReadVersion {
-	my ($self, $reader) = @_;
-	my $ret = { };
-	$ret->{Win} = $reader->ReadCardinal();
-	$ret->{Nt} = $reader->ReadCardinal();
-	$ret->{ServicePack} = $reader->ReadWord();
-	return $ret;
-}
-
-=comment
   TSetupVersionDataVersion = packed record
     Build: Word;
     Minor, Major: Byte;
@@ -561,22 +546,12 @@ sub SetupFileLocations {
 		$ret->[$i]->{OriginalSize} = $reader->ReadInteger64();
 		$ret->[$i]->{ChunkCompressedSize} = $reader->ReadInteger64();
 		$ret->[$i]->{Checksum} = $reader->ReadByteArray(16);
-		# 100-nanosecond intervals since January 1, 1601 (UTC).
-		my $tlow = $reader->ReadLongWord();
-		my $thigh = $reader->ReadLongWord();
-		# Extract seconds so we don't exceed 64 bits
-		my $hnsecs = $tlow | ($thigh << 32);
-		my $secs = int($hnsecs / 10000000);
-		my $nsecs = ($hnsecs - $secs * 10000000) * 100;
+		$ret->[$i]->{TimeStamp} = $self->ReadFileTime($reader);
 		$ret->[$i]->{FileVersionMS} = $reader->ReadLongWord();
 		$ret->[$i]->{FileVersionLS} = $reader->ReadLongWord();
 		$ret->[$i]->{Flags} = $reader->ReadSet([ 'VersionInfoValid', 'VersionInfoNotValid', 'TimeStampInUTC', 'IsUninstExe', 'CallInstructionOptimized', 'Touch', 'ChunkEncrypted', 'ChunkCompressed', 'SolidBreak' ]);
 		if ($ret->[$i]->{Flags}->{TimeStampInUTC}) {
-			# UTC
-			$ret->[$i]->{TimeStamp} = DateTime->new(year => 1601, month => 1, day => 1, hour => 0, minute => 0, second => 0, nanosecond => 0, time_zone => 'UTC')->add(seconds => $secs, nanoseconds => $nsecs);
-		} else {
-			# Unknown timezone
-			$ret->[$i]->{TimeStamp} = DateTime->new(year => 1601, month => 1, day => 1, hour => 0, minute => 0, second => 0, nanosecond => 0)->add(seconds => $secs, nanoseconds => $nsecs);
+			$ret->[$i]->{TimeStamp}->set_time_zone('UTC');
 		}
 	}
 	return $ret;

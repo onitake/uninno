@@ -8,14 +8,6 @@ use Setup::Inno::BlockReader;
 use Setup::Inno::LzmaReader;
 use IO::File;
 
-sub Compression1 {
-	my ($self, $header) = @_;
-	if (!defined($header->{CompressMethod}) || $header->{CompressMethod} eq 'Stored' || $header->{CompressMethod} eq 0) {
-		return undef;
-	}
-	return $header->{CompressMethod};
-}
-
 sub FieldReader {
 	my ($self, $reader) = @_;
 	my $breader = Setup::Inno::BlockReader->new($reader, 4096) || die("Can't create block reader");
