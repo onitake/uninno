@@ -1,25 +1,12 @@
 #!/usr/bin/perl
 
-package Setup::Inno::Struct4105;
+package Setup::Inno::Struct4206;
 
 use strict;
-use base qw(Setup::Inno::Struct4104);
-use Setup::Inno::BlockReader;
-use Setup::Inno::LzmaReader;
-use IO::File;
-
-sub FieldReader {
-	my ($self, $reader) = @_;
-	my $breader = Setup::Inno::BlockReader->new($reader, 4096) || die("Can't create block reader");
-	my $creader = $breader;
-	if ($breader->compressed()) {
-		$creader = Setup::Inno::LzmaReader->new($breader);
-	}
-	my $freader = Setup::Inno::FieldReader->new($creader) || die("Can't create field reader");
-	return $freader;
-}
+use base qw(Setup::Inno::Struct4205);
 
 =comment
+  TMD5Digest = array[0..15] of Byte;
   TSetupVersionDataVersion = packed record
     Build: Word;
     Minor, Major: Byte;
@@ -37,25 +24,29 @@ sub FieldReader {
     shDisableReadyPage, shAlwaysShowDirOnReadyPage, shAlwaysShowGroupOnReadyPage,
     shAllowUNCPath, shUserInfoPage, shUsePreviousUserInfo,
     shUninstallRestartComputer, shRestartIfNeededByRun, shShowTasksTreeLines,
-    shAllowCancelDuringInstall, shWizardImageStretch);
-  TSetupCompressMethod = (cmZip, cmBzip, cmLZMA);
+    shAllowCancelDuringInstall, shWizardImageStretch, shAppendDefaultDirName,
+    shAppendDefaultGroupName, shEncryptionUsed);
+  TSetupCompressMethod = (cmStored, cmZip, cmBzip, cmLZMA);
+  TSetupSalt = array[0..7] of Byte;
   TSetupHeader = packed record
     AppName, AppVerName, AppId, AppCopyright, AppPublisher, AppPublisherURL,
       AppSupportURL, AppUpdatesURL, AppVersion, DefaultDirName,
       DefaultGroupName, BaseFilename, LicenseText,
       InfoBeforeText, InfoAfterText, UninstallFilesDir, UninstallDisplayName,
       UninstallDisplayIcon, AppMutex, DefaultUserInfoName,
-      DefaultUserInfoOrg, DefaultUserInfoSerial, CompiledCodeText: String;
+      DefaultUserInfoOrg, DefaultUserInfoSerial, CompiledCodeText,
+      AppReadmeFile, AppContact, AppComments, AppModifyPath: String;
     LeadBytes: set of Char; 
-    NumLanguageEntries, NumPermissionEntries, NumTypeEntries,
-      NumComponentEntries, NumTaskEntries, NumDirEntries, NumFileEntries,
-      NumFileLocationEntries, NumIconEntries, NumIniEntries,
+    NumLanguageEntries, NumCustomMessageEntries, NumPermissionEntries,
+      NumTypeEntries, NumComponentEntries, NumTaskEntries, NumDirEntries,
+      NumFileEntries, NumFileLocationEntries, NumIconEntries, NumIniEntries,
       NumRegistryEntries, NumInstallDeleteEntries, NumUninstallDeleteEntries,
       NumRunEntries, NumUninstallRunEntries: Integer;
     MinVersion, OnlyBelowVersion: TSetupVersionData;
     BackColor, BackColor2, WizardImageBackColor: Longint;
     WizardSmallImageBackColor: Longint;
-    Password: Longint;
+    PasswordHash: TMD5Digest;
+    PasswordSalt: TSetupSalt;
     ExtraDiskSpaceRequired: Integer64;
     SlicesPerDisk: Integer;
     InstallMode: (imNormal, imSilent, imVerySilent);
@@ -72,12 +63,12 @@ sub FieldReader {
 sub SetupHeader {
 	my ($self, $reader) = @_;
 	my $ret = { };
-	my @strings = ('AppName', 'AppVerName', 'AppId', 'AppCopyright', 'AppPublisher', 'AppPublisherURL', 'AppSupportURL', 'AppUpdatesURL', 'AppVersion', 'DefaultDirName', 'DefaultGroupName', 'BaseFilename', 'LicenseText', 'InfoBeforeText', 'InfoAfterText', 'UninstallFilesDir', 'UninstallDisplayName', 'UninstallDisplayIcon', 'AppMutex', 'DefaultUserInfoName', 'DefaultUserInfoOrg', 'DefaultUserInfoSerial', 'CompiledCodeText');
+	my @strings = ('AppName', 'AppVerName', 'AppId', 'AppCopyright', 'AppPublisher', 'AppPublisherURL', 'AppSupportURL', 'AppUpdatesURL', 'AppVersion', 'DefaultDirName', 'DefaultGroupName', 'BaseFilename', 'LicenseText', 'InfoBeforeText', 'InfoAfterText', 'UninstallFilesDir', 'UninstallDisplayName', 'UninstallDisplayIcon', 'AppMutex', 'DefaultUserInfoName', 'DefaultUserInfoOrg', 'DefaultUserInfoSerial', 'CompiledCodeText', 'AppReadmeFile', 'AppContact', 'AppComments', 'AppModifyPath');
 	for my $string (@strings) {
 		$ret->{$string} = $reader->ReadString();
 	}
 	$ret->{LeadBytes} = $reader->ReadSet(256);
-	my @integers = ('NumLanguageEntries', 'NumPermissionEntries', 'NumTypeEntries', 'NumComponentEntries', 'NumTaskEntries', 'NumDirEntries', 'NumFileEntries', 'NumFileLocationEntries', 'NumIconEntries', 'NumIniEntries', 'NumRegistryEntries', 'NumInstallDeleteEntries', 'NumUninstallDeleteEntries', 'NumRunEntries', 'NumUninstallRunEntries');
+	my @integers = ('NumLanguageEntries', 'NumCustomMessageEntries', 'NumPermissionEntries', 'NumTypeEntries', 'NumComponentEntries', 'NumTaskEntries', 'NumDirEntries', 'NumFileEntries', 'NumFileLocationEntries', 'NumIconEntries', 'NumIniEntries', 'NumRegistryEntries', 'NumInstallDeleteEntries', 'NumUninstallDeleteEntries', 'NumRunEntries', 'NumUninstallRunEntries');
 	for my $integer (@integers) {
 		$ret->{$integer} = $reader->ReadInteger();
 	}
@@ -87,7 +78,8 @@ sub SetupHeader {
 	$ret->{BackColor2} = $reader->ReadLongInt();
 	$ret->{WizardImageBackColor} = $reader->ReadLongInt();
 	$ret->{WizardSmallImageBackColor} = $reader->ReadLongInt();
-	$ret->{Password} = $reader->ReadLongInt();
+	$ret->{PasswordHash} = $reader->ReadByteArray(16);
+	$ret->{PasswordSalt} = $reader->ReadByteArray(8);
 	$ret->{ExtraDiskSpaceRequired} = $reader->ReadInteger64();
 	$ret->{SlicesPerDisk} = $reader->ReadInteger();
 	$ret->{InstallMode} = $reader->ReadEnum(['Normal', 'Silent', 'VerySilent']);
@@ -97,12 +89,9 @@ sub SetupHeader {
 	$ret->{PrivilegesRequired} = $reader->ReadEnum(['None', 'PowerUser', 'Admin']);
 	$ret->{ShowLanguageDialog} = $reader->ReadEnum(['Yes', 'No', 'Auto']);
 	$ret->{LanguageDetectionMethod} = $reader->ReadEnum(['UILanguage', 'Locale', 'None']);
-	$ret->{CompressMethod} = $reader->ReadEnum(['Zip', 'Bzip', 'Lzma']);
-	$ret->{Options} = $reader->ReadSet(['DisableStartupPrompt', 'Uninstallable', 'CreateAppDir', 'DisableDirPage', 'DisableProgramGroupPage', 'AllowNoIcons', 'AlwaysRestart', 'AlwaysUsePersonalGroup', 'WindowVisible', 'WindowShowCaption', 'WindowResizable', 'WindowStartMaximized', 'EnableDirDoesntExistWarning', 'Password', 'AllowRootDirectory', 'DisableFinishedPage', 'ChangesAssociations', 'CreateUninstallRegKey', 'UsePreviousAppDir', 'BackColorHorizontal', 'UsePreviousGroup', 'UpdateUninstallLogAppName', 'UsePreviousSetupType', 'DisableReadyMemo', 'AlwaysShowComponentsList', 'FlatComponentsList', 'ShowComponentSizes', 'UsePreviousTasks', 'DisableReadyPage', 'AlwaysShowDirOnReadyPage', 'AlwaysShowGroupOnReadyPage', 'AllowUNCPath', 'UserInfoPage', 'UsePreviousUserInfo', 'UninstallRestartComputer', 'RestartIfNeededByRun', 'ShowTasksTreeLines', 'AllowCancelDuringInstall', 'WizardImageStretch']);
-	# Unsupported data blocks
-	$ret->{NumCustomMessageEntries} = 0;
+	$ret->{CompressMethod} = $reader->ReadEnum(['Stored', 'Zip', 'Bzip', 'Lzma']);
+	$ret->{Options} = $reader->ReadSet(['DisableStartupPrompt', 'Uninstallable', 'CreateAppDir', 'DisableDirPage', 'DisableProgramGroupPage', 'AllowNoIcons', 'AlwaysRestart', 'AlwaysUsePersonalGroup', 'WindowVisible', 'WindowShowCaption', 'WindowResizable', 'WindowStartMaximized', 'EnableDirDoesntExistWarning', 'Password', 'AllowRootDirectory', 'DisableFinishedPage', 'ChangesAssociations', 'CreateUninstallRegKey', 'UsePreviousAppDir', 'BackColorHorizontal', 'UsePreviousGroup', 'UpdateUninstallLogAppName', 'UsePreviousSetupType', 'DisableReadyMemo', 'AlwaysShowComponentsList', 'FlatComponentsList', 'ShowComponentSizes', 'UsePreviousTasks', 'DisableReadyPage', 'AlwaysShowDirOnReadyPage', 'AlwaysShowGroupOnReadyPage', 'AllowUNCPath', 'UserInfoPage', 'UsePreviousUserInfo', 'UninstallRestartComputer', 'RestartIfNeededByRun', 'ShowTasksTreeLines', 'AllowCancelDuringInstall', 'WizardImageStretch', 'AppendDefaultDirName', 'AppendDefaultGroupName', 'EncryptionUsed']);
 	return $ret;
 }
 
 1;
-

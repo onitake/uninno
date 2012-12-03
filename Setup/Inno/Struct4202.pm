@@ -1,21 +1,9 @@
 #!/usr/bin/perl
 
-package Setup::Inno::Struct4200;
+package Setup::Inno::Struct4202;
 
 use strict;
-use base qw(Setup::Inno::Struct4108);
-use Digest;
-
-sub CheckFile {
-	my ($self, $data, $checksum) = @_;
-	my $digest = Digest->new('MD5');
-	$digest->add($data);
-	my $dig = $digest->digest();
-	#use Data::Hexdumper;
-	#print hexdump $dig;
-	#print hexdump $checksum;
-	return $dig eq $checksum;
-}
+use base qw(Setup::Inno::Struct4201);
 
 =comment
   TMD5Digest = array[0..15] of Byte;
@@ -37,8 +25,9 @@ sub CheckFile {
     shAllowUNCPath, shUserInfoPage, shUsePreviousUserInfo,
     shUninstallRestartComputer, shRestartIfNeededByRun, shShowTasksTreeLines,
     shAllowCancelDuringInstall, shWizardImageStretch, shAppendDefaultDirName,
-    shAppendDefaultGroupName);
+    shAppendDefaultGroupName, shEncryptionUsed);
   TSetupCompressMethod = (cmZip, cmBzip, cmLZMA);
+  TSetupSalt = array[0..7] of Byte;
   TSetupHeader = packed record
     AppName, AppVerName, AppId, AppCopyright, AppPublisher, AppPublisherURL,
       AppSupportURL, AppUpdatesURL, AppVersion, DefaultDirName,
@@ -47,15 +36,16 @@ sub CheckFile {
       UninstallDisplayIcon, AppMutex, DefaultUserInfoName,
       DefaultUserInfoOrg, DefaultUserInfoSerial, CompiledCodeText: String;
     LeadBytes: set of Char; 
-    NumLanguageEntries, NumPermissionEntries, NumTypeEntries,
-      NumComponentEntries, NumTaskEntries, NumDirEntries, NumFileEntries,
-      NumFileLocationEntries, NumIconEntries, NumIniEntries,
+    NumLanguageEntries, NumCustomMessageEntries, NumPermissionEntries,
+      NumTypeEntries, NumComponentEntries, NumTaskEntries, NumDirEntries,
+      NumFileEntries, NumFileLocationEntries, NumIconEntries, NumIniEntries,
       NumRegistryEntries, NumInstallDeleteEntries, NumUninstallDeleteEntries,
       NumRunEntries, NumUninstallRunEntries: Integer;
     MinVersion, OnlyBelowVersion: TSetupVersionData;
     BackColor, BackColor2, WizardImageBackColor: Longint;
     WizardSmallImageBackColor: Longint;
-    Password: TMD5Digest;
+    PasswordHash: TMD5Digest;
+    PasswordSalt: TSetupSalt;
     ExtraDiskSpaceRequired: Integer64;
     SlicesPerDisk: Integer;
     InstallMode: (imNormal, imSilent, imVerySilent);
@@ -77,7 +67,7 @@ sub SetupHeader {
 		$ret->{$string} = $reader->ReadString();
 	}
 	$ret->{LeadBytes} = $reader->ReadSet(256);
-	my @integers = ('NumLanguageEntries', 'NumPermissionEntries', 'NumTypeEntries', 'NumComponentEntries', 'NumTaskEntries', 'NumDirEntries', 'NumFileEntries', 'NumFileLocationEntries', 'NumIconEntries', 'NumIniEntries', 'NumRegistryEntries', 'NumInstallDeleteEntries', 'NumUninstallDeleteEntries', 'NumRunEntries', 'NumUninstallRunEntries');
+	my @integers = ('NumLanguageEntries', 'NumCustomMessageEntries', 'NumPermissionEntries', 'NumTypeEntries', 'NumComponentEntries', 'NumTaskEntries', 'NumDirEntries', 'NumFileEntries', 'NumFileLocationEntries', 'NumIconEntries', 'NumIniEntries', 'NumRegistryEntries', 'NumInstallDeleteEntries', 'NumUninstallDeleteEntries', 'NumRunEntries', 'NumUninstallRunEntries');
 	for my $integer (@integers) {
 		$ret->{$integer} = $reader->ReadInteger();
 	}
@@ -87,7 +77,8 @@ sub SetupHeader {
 	$ret->{BackColor2} = $reader->ReadLongInt();
 	$ret->{WizardImageBackColor} = $reader->ReadLongInt();
 	$ret->{WizardSmallImageBackColor} = $reader->ReadLongInt();
-	$ret->{Password} = $reader->ReadByteArray(16);
+	$ret->{PasswordHash} = $reader->ReadByteArray(16);
+	$ret->{PasswordSalt} = $reader->ReadByteArray(8);
 	$ret->{ExtraDiskSpaceRequired} = $reader->ReadInteger64();
 	$ret->{SlicesPerDisk} = $reader->ReadInteger();
 	$ret->{InstallMode} = $reader->ReadEnum(['Normal', 'Silent', 'VerySilent']);
@@ -98,9 +89,40 @@ sub SetupHeader {
 	$ret->{ShowLanguageDialog} = $reader->ReadEnum(['Yes', 'No', 'Auto']);
 	$ret->{LanguageDetectionMethod} = $reader->ReadEnum(['UILanguage', 'Locale', 'None']);
 	$ret->{CompressMethod} = $reader->ReadEnum(['Zip', 'Bzip', 'Lzma']);
-	$ret->{Options} = $reader->ReadSet(['DisableStartupPrompt', 'Uninstallable', 'CreateAppDir', 'DisableDirPage', 'DisableProgramGroupPage', 'AllowNoIcons', 'AlwaysRestart', 'AlwaysUsePersonalGroup', 'WindowVisible', 'WindowShowCaption', 'WindowResizable', 'WindowStartMaximized', 'EnableDirDoesntExistWarning', 'Password', 'AllowRootDirectory', 'DisableFinishedPage', 'ChangesAssociations', 'CreateUninstallRegKey', 'UsePreviousAppDir', 'BackColorHorizontal', 'UsePreviousGroup', 'UpdateUninstallLogAppName', 'UsePreviousSetupType', 'DisableReadyMemo', 'AlwaysShowComponentsList', 'FlatComponentsList', 'ShowComponentSizes', 'UsePreviousTasks', 'DisableReadyPage', 'AlwaysShowDirOnReadyPage', 'AlwaysShowGroupOnReadyPage', 'AllowUNCPath', 'UserInfoPage', 'UsePreviousUserInfo', 'UninstallRestartComputer', 'RestartIfNeededByRun', 'ShowTasksTreeLines', 'AllowCancelDuringInstall', 'WizardImageStretch', 'AppendDefaultDirName', 'AppendDefaultGroupName']);
-	# Unsupported data blocks
-	$ret->{NumCustomMessageEntries} = 0;
+	$ret->{Options} = $reader->ReadSet(['DisableStartupPrompt', 'Uninstallable', 'CreateAppDir', 'DisableDirPage', 'DisableProgramGroupPage', 'AllowNoIcons', 'AlwaysRestart', 'AlwaysUsePersonalGroup', 'WindowVisible', 'WindowShowCaption', 'WindowResizable', 'WindowStartMaximized', 'EnableDirDoesntExistWarning', 'Password', 'AllowRootDirectory', 'DisableFinishedPage', 'ChangesAssociations', 'CreateUninstallRegKey', 'UsePreviousAppDir', 'BackColorHorizontal', 'UsePreviousGroup', 'UpdateUninstallLogAppName', 'UsePreviousSetupType', 'DisableReadyMemo', 'AlwaysShowComponentsList', 'FlatComponentsList', 'ShowComponentSizes', 'UsePreviousTasks', 'DisableReadyPage', 'AlwaysShowDirOnReadyPage', 'AlwaysShowGroupOnReadyPage', 'AllowUNCPath', 'UserInfoPage', 'UsePreviousUserInfo', 'UninstallRestartComputer', 'RestartIfNeededByRun', 'ShowTasksTreeLines', 'AllowCancelDuringInstall', 'WizardImageStretch', 'AppendDefaultDirName', 'AppendDefaultGroupName', 'EncryptionUsed']);
+	return $ret;
+}
+
+=comment
+  TSetupLanguageEntry = packed record
+    { Note: LanguageName is Unicode }
+    Name, LanguageName, DialogFontName, TitleFontName, WelcomeFontName,
+      CopyrightFontName, Data, LicenseText, InfoBeforeText,
+      InfoAfterText: String;
+    LanguageID, LanguageCodePage: Cardinal;
+    DialogFontSize: Integer;
+    TitleFontSize: Integer;
+    WelcomeFontSize: Integer;
+    CopyrightFontSize: Integer;
+  end;
+=cut
+sub SetupLanguages {
+	my ($self, $reader, $count) = @_;
+	my $ret = [ ];
+	for (my $i = 0; $i < $count; $i++) {
+		my @strings = ('Name', 'LanguageName', 'DialogFontName', 'TitleFontName', 'WelcomeFontName', 'CopyrightFontName', 'Data', 'LicenseText', 'InfoBeforeText', 'InfoAfterText');
+		for my $string (@strings) {
+			$ret->[$i]->{$string} = $reader->ReadString();
+		}
+		# This is probably a wide string, but encoded as a regular one (length = number of bytes, not characters)
+		#$ret->[$i]->{LanguageName} = decode('UTF-16LE', $ret->[$i]->{LanguageName});
+		$ret->[$i]->{LanguageID} = $reader->ReadCardinal();
+		$ret->[$i]->{LanguageCodePage} = $reader->ReadCardinal();
+		$ret->[$i]->{DialogFontSize} = $reader->ReadInteger();
+		$ret->[$i]->{TitleFontSize} = $reader->ReadInteger();
+		$ret->[$i]->{WelcomeFontSize} = $reader->ReadInteger();
+		$ret->[$i]->{CopyrightFontSize} = $reader->ReadInteger();
+	}
 	return $ret;
 }
 
@@ -116,7 +138,7 @@ sub SetupHeader {
     TimeStamp: TFileTime;
     FileVersionMS, FileVersionLS: DWORD;
     Flags: set of (foVersionInfoValid, foVersionInfoNotValid, foTimeStampInUTC
-      foIsUninstExe, foCallInstructionOptimized, foTouch);
+      foIsUninstExe, foCallInstructionOptimized, foTouch, foChunkEncrypted);
   end;
 =cut
 sub SetupFileLocations {
@@ -133,7 +155,7 @@ sub SetupFileLocations {
 		$ret->[$i]->{TimeStamp} = $self->ReadFileTime($reader);
 		$ret->[$i]->{FileVersionMS} = $reader->ReadLongWord();
 		$ret->[$i]->{FileVersionLS} = $reader->ReadLongWord();
-		$ret->[$i]->{Flags} = $reader->ReadSet(['VersionInfoValid', 'VersionInfoNotValid', 'TimeStampInUTC', 'IsUninstExe', 'CallInstructionOptimized', 'Touch']);
+		$ret->[$i]->{Flags} = $reader->ReadSet(['VersionInfoValid', 'VersionInfoNotValid', 'TimeStampInUTC', 'IsUninstExe', 'CallInstructionOptimized', 'Touch', 'ChunkEncrypted']);
 		if ($ret->[$i]->{Flags}->{TimeStampInUTC}) {
 			$ret->[$i]->{TimeStamp}->set_time_zone('UTC');
 		}
@@ -144,4 +166,3 @@ sub SetupFileLocations {
 }
 
 1;
-

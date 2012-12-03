@@ -9,6 +9,26 @@ use Fcntl;
 use Digest;
 use IO::Uncompress::AnyInflate;
 use IO::Uncompress::Bunzip2;
+use Win::Exe::Util;
+
+=comment
+  TSetupLdrOffsetTable = packed record
+    ID: array[1..12] of Char;
+    TotalSize,
+    OffsetEXE, CompressedSizeEXE, UncompressedSizeEXE, AdlerEXE,
+    OffsetMsg, Offset0, Offset1: Longint;
+  end;
+=cut
+sub OffsetTableSize {
+	return 44;
+}
+
+sub ParseOffsetTable {
+	my ($self, $data) = @_;
+	(length($data) >= $self->OffsetTableSize()) || die("Invalid offset table size");
+	my $ofstable = unpackbinary($data, '(a12L8)<', 'ID', 'TotalSize', 'OffsetEXE', 'CompressedSizeEXE', 'UncompressedSizeEXE', 'AdlerEXE', 'OffsetMsg', 'Offset0', 'Offset1');
+	return $ofstable;
+}
 
 sub CheckFile {
 	my ($self, $data, $checksum) = @_;
@@ -489,7 +509,7 @@ sub SetupRun {
 		$ret->{$name}->{Name} = $name;
 		my @strings = qw"Parameters WorkingDir RunOnceId StatusMsg Description Components Tasks";
 		for my $string (@strings) {
-			$ret->[$i]->{$string} = $reader->ReadString();
+			$ret->{$name}->{$string} = $reader->ReadString();
 		}
 		$ret->{$name}->{MinVersion} = $self->ReadVersion($reader);
 		$ret->{$name}->{OnlyBelowVersion} = $self->ReadVersion($reader);

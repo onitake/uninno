@@ -61,15 +61,6 @@ sub Version {
 	return '0000';
 }
 
-# Check the header CRC.
-# The default implementation returns 1, for headers without CRC
-# Arguments:
-#   A string containing header data (must be truncated to the proper length)
-#   The checksum to compare against
-sub CheckCrc {
-	return 1;
-}
-
 # Check a decompressed file's checksum.
 # The default implementation returns 1, for formats without file checksum.
 # Implement the correct checksum algorithm for each version.

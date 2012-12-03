@@ -1,21 +1,9 @@
 #!/usr/bin/perl
 
-package Setup::Inno::Struct4200;
+package Setup::Inno::Struct4201;
 
 use strict;
-use base qw(Setup::Inno::Struct4108);
-use Digest;
-
-sub CheckFile {
-	my ($self, $data, $checksum) = @_;
-	my $digest = Digest->new('MD5');
-	$digest->add($data);
-	my $dig = $digest->digest();
-	#use Data::Hexdumper;
-	#print hexdump $dig;
-	#print hexdump $checksum;
-	return $dig eq $checksum;
-}
+use base qw(Setup::Inno::Struct4200);
 
 =comment
   TMD5Digest = array[0..15] of Byte;
@@ -47,9 +35,9 @@ sub CheckFile {
       UninstallDisplayIcon, AppMutex, DefaultUserInfoName,
       DefaultUserInfoOrg, DefaultUserInfoSerial, CompiledCodeText: String;
     LeadBytes: set of Char; 
-    NumLanguageEntries, NumPermissionEntries, NumTypeEntries,
-      NumComponentEntries, NumTaskEntries, NumDirEntries, NumFileEntries,
-      NumFileLocationEntries, NumIconEntries, NumIniEntries,
+    NumLanguageEntries, NumCustomMessageEntries, NumPermissionEntries,
+      NumTypeEntries, NumComponentEntries, NumTaskEntries, NumDirEntries,
+      NumFileEntries, NumFileLocationEntries, NumIconEntries, NumIniEntries,
       NumRegistryEntries, NumInstallDeleteEntries, NumUninstallDeleteEntries,
       NumRunEntries, NumUninstallRunEntries: Integer;
     MinVersion, OnlyBelowVersion: TSetupVersionData;
@@ -77,7 +65,7 @@ sub SetupHeader {
 		$ret->{$string} = $reader->ReadString();
 	}
 	$ret->{LeadBytes} = $reader->ReadSet(256);
-	my @integers = ('NumLanguageEntries', 'NumPermissionEntries', 'NumTypeEntries', 'NumComponentEntries', 'NumTaskEntries', 'NumDirEntries', 'NumFileEntries', 'NumFileLocationEntries', 'NumIconEntries', 'NumIniEntries', 'NumRegistryEntries', 'NumInstallDeleteEntries', 'NumUninstallDeleteEntries', 'NumRunEntries', 'NumUninstallRunEntries');
+	my @integers = ('NumLanguageEntries', 'NumCustomMessageEntries', 'NumPermissionEntries', 'NumTypeEntries', 'NumComponentEntries', 'NumTaskEntries', 'NumDirEntries', 'NumFileEntries', 'NumFileLocationEntries', 'NumIconEntries', 'NumIniEntries', 'NumRegistryEntries', 'NumInstallDeleteEntries', 'NumUninstallDeleteEntries', 'NumRunEntries', 'NumUninstallRunEntries');
 	for my $integer (@integers) {
 		$ret->{$integer} = $reader->ReadInteger();
 	}
@@ -99,49 +87,69 @@ sub SetupHeader {
 	$ret->{LanguageDetectionMethod} = $reader->ReadEnum(['UILanguage', 'Locale', 'None']);
 	$ret->{CompressMethod} = $reader->ReadEnum(['Zip', 'Bzip', 'Lzma']);
 	$ret->{Options} = $reader->ReadSet(['DisableStartupPrompt', 'Uninstallable', 'CreateAppDir', 'DisableDirPage', 'DisableProgramGroupPage', 'AllowNoIcons', 'AlwaysRestart', 'AlwaysUsePersonalGroup', 'WindowVisible', 'WindowShowCaption', 'WindowResizable', 'WindowStartMaximized', 'EnableDirDoesntExistWarning', 'Password', 'AllowRootDirectory', 'DisableFinishedPage', 'ChangesAssociations', 'CreateUninstallRegKey', 'UsePreviousAppDir', 'BackColorHorizontal', 'UsePreviousGroup', 'UpdateUninstallLogAppName', 'UsePreviousSetupType', 'DisableReadyMemo', 'AlwaysShowComponentsList', 'FlatComponentsList', 'ShowComponentSizes', 'UsePreviousTasks', 'DisableReadyPage', 'AlwaysShowDirOnReadyPage', 'AlwaysShowGroupOnReadyPage', 'AllowUNCPath', 'UserInfoPage', 'UsePreviousUserInfo', 'UninstallRestartComputer', 'RestartIfNeededByRun', 'ShowTasksTreeLines', 'AllowCancelDuringInstall', 'WizardImageStretch', 'AppendDefaultDirName', 'AppendDefaultGroupName']);
-	# Unsupported data blocks
-	$ret->{NumCustomMessageEntries} = 0;
 	return $ret;
 }
 
 =comment
-  TMD5Digest = array[0..15] of Byte;
-  TSetupFileLocationEntry = packed record
-    FirstSlice, LastSlice: Integer;
-    StartOffset: Longint;
-    ChunkSuboffset: Integer64;
-    OriginalSize: Integer64;
-    ChunkCompressedSize: Integer64;
-    MD5Sum: TMD5Digest;
-    TimeStamp: TFileTime;
-    FileVersionMS, FileVersionLS: DWORD;
-    Flags: set of (foVersionInfoValid, foVersionInfoNotValid, foTimeStampInUTC
-      foIsUninstExe, foCallInstructionOptimized, foTouch);
+  TSetupCustomMessageEntry = packed record
+    Name, Value: String;
+    LangIndex: Integer;
   end;
 =cut
-sub SetupFileLocations {
+sub SetupCustomMessages {
+	my ($self, $reader, $count) = @_;
+	my $ret = { };
+	for (my $i = 0; $i < $count; $i++) {
+		my $name = $reader->ReadString();
+		if (!$name) {
+			# Rather use the index if the name is empty
+			$name = $i;
+		}
+		$ret->{$name}->{Name} = $name;
+		$ret->{$name}->{Value} = $reader->ReadString();
+		$ret->{$name}->{LangIndex} = $reader->ReadInteger();
+	}
+	return $ret;
+}
+
+=comment
+  TSetupFileEntry = packed record
+    SourceFilename, DestName, InstallFontName: String;
+    Components, Tasks, Languages, Check, AfterInstall, BeforeInstall: String;
+    MinVersion, OnlyBelowVersion: TSetupVersionData;
+    LocationEntry: Integer;
+    Attribs: Integer;
+    ExternalSize: Integer64;
+    PermissionsEntry: Smallint;
+    Options: set of (foConfirmOverwrite, foUninsNeverUninstall, foRestartReplace,
+      foDeleteAfterInstall, foRegisterServer, foRegisterTypeLib, foSharedFile,
+      foCompareTimeStamp, foFontIsntTrueType,
+      foSkipIfSourceDoesntExist, foOverwriteReadOnly, foOverwriteSameVersion,
+      foCustomDestName, foOnlyIfDestFileExists, foNoRegError,
+      foUninsRestartDelete, foOnlyIfDoesntExist, foIgnoreVersion,
+      foPromptIfOlder, foDontCopy, foUninsRemoveReadOnly
+      foRecurseSubDirsExternal, foReplaceSameVersionIfContentsDiffer);
+    FileType: (ftUserFile, ftUninstExe, ftRegSvrExe);
+  end;
+=cut
+sub SetupFiles {
 	my ($self, $reader, $count) = @_;
 	my $ret = [ ];
 	for (my $i = 0; $i < $count; $i++) {
-		$ret->[$i]->{FirstSlice} = $reader->ReadInteger();
-		$ret->[$i]->{LastSlice} = $reader->ReadInteger();
-		$ret->[$i]->{StartOffset} = $reader->ReadLongInt();
-		$ret->[$i]->{ChunkSuboffset} = $reader->ReadInteger64();
-		$ret->[$i]->{OriginalSize} = $reader->ReadInteger64();
-		$ret->[$i]->{ChunkCompressedSize} = $reader->ReadInteger64();
-		$ret->[$i]->{Checksum} = $reader->ReadByteArray(16);
-		$ret->[$i]->{TimeStamp} = $self->ReadFileTime($reader);
-		$ret->[$i]->{FileVersionMS} = $reader->ReadLongWord();
-		$ret->[$i]->{FileVersionLS} = $reader->ReadLongWord();
-		$ret->[$i]->{Flags} = $reader->ReadSet(['VersionInfoValid', 'VersionInfoNotValid', 'TimeStampInUTC', 'IsUninstExe', 'CallInstructionOptimized', 'Touch']);
-		if ($ret->[$i]->{Flags}->{TimeStampInUTC}) {
-			$ret->[$i]->{TimeStamp}->set_time_zone('UTC');
+		my @strings = ('SourceFilename', 'DestName', 'InstallFontName', 'Components', 'Tasks', 'Languages', 'Check', 'AfterInstall', 'BeforeInstall');
+		for my $string (@strings) {
+			$ret->[$i]->{$string} = $reader->ReadString();
 		}
-		# Non-configurable settings
-		$ret->[$i]->{Flags}->{ChunkCompressed} = 1;
+		$ret->[$i]->{MinVersion} = $self->ReadVersion($reader);
+		$ret->[$i]->{OnlyBelowVersion} = $self->ReadVersion($reader);
+		$ret->[$i]->{LocationEntry} = $reader->ReadInteger();
+		$ret->[$i]->{Attribs} = $reader->ReadInteger();
+		$ret->[$i]->{ExternalSize} = $reader->ReadInteger64();
+		$ret->[$i]->{PermissionsEntry} = $self->ReadSmallInt();
+		$ret->[$i]->{Options} = $reader->ReadSet(['ConfirmOverwrite', 'UninsNeverUninstall', 'RestartReplace', 'DeleteAfterInstall', 'RegisterServer', 'RegisterTypeLib', 'SharedFile', 'CompareTimeStamp', 'FontIsntTrueType', 'SkipIfSourceDoesntExist', 'OverwriteReadOnly', 'OverwriteSameVersion', 'CustomDestName', 'OnlyIfDestFileExists', 'NoRegError', 'UninsRestartDelete', 'OnlyIfDoesntExist', 'IgnoreVersion', 'PromptIfOlder', 'DontCopy', 'UninsRemoveReadOnly', 'RecurseSubDirsExternal', 'ReplaceSameVersionIfContentsDiffer']);
+		$ret->[$i]->{FileType} = $reader->ReadEnum(['UserFile', 'UninstExe', 'RegSvrExe']);
 	}
 	return $ret;
 }
 
 1;
-

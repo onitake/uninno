@@ -1,24 +1,11 @@
 #!/usr/bin/perl
 
-package Setup::Inno::Struct4200;
+package Setup::Inno::Struct4108;
 
 use strict;
-use base qw(Setup::Inno::Struct4108);
-use Digest;
-
-sub CheckFile {
-	my ($self, $data, $checksum) = @_;
-	my $digest = Digest->new('MD5');
-	$digest->add($data);
-	my $dig = $digest->digest();
-	#use Data::Hexdumper;
-	#print hexdump $dig;
-	#print hexdump $checksum;
-	return $dig eq $checksum;
-}
+use base qw(Setup::Inno::Struct4107);
 
 =comment
-  TMD5Digest = array[0..15] of Byte;
   TSetupVersionDataVersion = packed record
     Build: Word;
     Minor, Major: Byte;
@@ -55,7 +42,7 @@ sub CheckFile {
     MinVersion, OnlyBelowVersion: TSetupVersionData;
     BackColor, BackColor2, WizardImageBackColor: Longint;
     WizardSmallImageBackColor: Longint;
-    Password: TMD5Digest;
+    Password: Longint;
     ExtraDiskSpaceRequired: Integer64;
     SlicesPerDisk: Integer;
     InstallMode: (imNormal, imSilent, imVerySilent);
@@ -87,7 +74,7 @@ sub SetupHeader {
 	$ret->{BackColor2} = $reader->ReadLongInt();
 	$ret->{WizardImageBackColor} = $reader->ReadLongInt();
 	$ret->{WizardSmallImageBackColor} = $reader->ReadLongInt();
-	$ret->{Password} = $reader->ReadByteArray(16);
+	$ret->{Password} = $reader->ReadLongInt();
 	$ret->{ExtraDiskSpaceRequired} = $reader->ReadInteger64();
 	$ret->{SlicesPerDisk} = $reader->ReadInteger();
 	$ret->{InstallMode} = $reader->ReadEnum(['Normal', 'Silent', 'VerySilent']);
@@ -105,18 +92,57 @@ sub SetupHeader {
 }
 
 =comment
-  TMD5Digest = array[0..15] of Byte;
+  TSetupFileEntry = packed record
+    SourceFilename, DestName, InstallFontName: String;
+    Components, Tasks, Languages, Check, AfterInstall, BeforeInstall: String;
+    MinVersion, OnlyBelowVersion: TSetupVersionData;
+    LocationEntry: Integer;
+    Attribs: Integer;
+    ExternalSize: Integer64;
+    PermissionsEntry: Smallint;
+    Options: set of (foConfirmOverwrite, foUninsNeverUninstall, foRestartReplace,
+      foDeleteAfterInstall, foRegisterServer, foRegisterTypeLib, foSharedFile,
+      foCompareTimeStamp, foFontIsntTrueType,
+      foSkipIfSourceDoesntExist, foOverwriteReadOnly, foOverwriteSameVersion,
+      foCustomDestName, foOnlyIfDestFileExists, foNoRegError,
+      foUninsRestartDelete, foOnlyIfDoesntExist, foIgnoreVersion,
+      foPromptIfOlder, foDontCopy, foUninsRemoveReadOnly
+      foRecurseSubDirsExternal);
+    FileType: (ftUserFile, ftUninstExe, ftRegSvrExe);
+  end;
+=cut
+sub SetupFiles {
+	my ($self, $reader, $count) = @_;
+	my $ret = [ ];
+	for (my $i = 0; $i < $count; $i++) {
+		my @strings = ('SourceFilename', 'DestName', 'InstallFontName', 'Components', 'Tasks', 'Languages', 'Check', 'AfterInstall', 'BeforeInstall');
+		for my $string (@strings) {
+			$ret->[$i]->{$string} = $reader->ReadString();
+		}
+		$ret->[$i]->{MinVersion} = $self->ReadVersion($reader);
+		$ret->[$i]->{OnlyBelowVersion} = $self->ReadVersion($reader);
+		$ret->[$i]->{LocationEntry} = $reader->ReadInteger();
+		$ret->[$i]->{Attribs} = $reader->ReadInteger();
+		$ret->[$i]->{ExternalSize} = $reader->ReadInteger64();
+		$ret->[$i]->{PermissionsEntry} = $self->ReadSmallInt();
+		$ret->[$i]->{Options} = $reader->ReadSet(['ConfirmOverwrite', 'UninsNeverUninstall', 'RestartReplace', 'DeleteAfterInstall', 'RegisterServer', 'RegisterTypeLib', 'SharedFile', 'CompareTimeStamp', 'FontIsntTrueType', 'SkipIfSourceDoesntExist', 'OverwriteReadOnly', 'OverwriteSameVersion', 'CustomDestName', 'OnlyIfDestFileExists', 'NoRegError', 'UninsRestartDelete', 'OnlyIfDoesntExist', 'IgnoreVersion', 'PromptIfOlder', 'DontCopy', 'UninsRemoveReadOnly', 'RecurseSubDirsExternal']);
+		$ret->[$i]->{FileType} = $reader->ReadEnum(['UserFile', 'UninstExe', 'RegSvrExe']);
+	}
+	return $ret;
+}
+
+=comment
   TSetupFileLocationEntry = packed record
     FirstSlice, LastSlice: Integer;
     StartOffset: Longint;
     ChunkSuboffset: Integer64;
     OriginalSize: Integer64;
     ChunkCompressedSize: Integer64;
-    MD5Sum: TMD5Digest;
+    CRC: Longint;
     TimeStamp: TFileTime;
     FileVersionMS, FileVersionLS: DWORD;
     Flags: set of (foVersionInfoValid, foVersionInfoNotValid, foTimeStampInUTC
-      foIsUninstExe, foCallInstructionOptimized, foTouch);
+      foIsUninstExe, foCallInstructionOptimized);
   end;
 =cut
 sub SetupFileLocations {
@@ -129,11 +155,11 @@ sub SetupFileLocations {
 		$ret->[$i]->{ChunkSuboffset} = $reader->ReadInteger64();
 		$ret->[$i]->{OriginalSize} = $reader->ReadInteger64();
 		$ret->[$i]->{ChunkCompressedSize} = $reader->ReadInteger64();
-		$ret->[$i]->{Checksum} = $reader->ReadByteArray(16);
+		$ret->[$i]->{Checksum} = $reader->ReadLongInt();
 		$ret->[$i]->{TimeStamp} = $self->ReadFileTime($reader);
 		$ret->[$i]->{FileVersionMS} = $reader->ReadLongWord();
 		$ret->[$i]->{FileVersionLS} = $reader->ReadLongWord();
-		$ret->[$i]->{Flags} = $reader->ReadSet(['VersionInfoValid', 'VersionInfoNotValid', 'TimeStampInUTC', 'IsUninstExe', 'CallInstructionOptimized', 'Touch']);
+		$ret->[$i]->{Flags} = $reader->ReadSet(['VersionInfoValid', 'VersionInfoNotValid', 'TimeStampInUTC', 'IsUninstExe', 'CallInstructionOptimized']);
 		if ($ret->[$i]->{Flags}->{TimeStampInUTC}) {
 			$ret->[$i]->{TimeStamp}->set_time_zone('UTC');
 		}
