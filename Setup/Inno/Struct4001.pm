@@ -279,6 +279,7 @@ sub SetupTasks {
   TSetupDirEntry = packed record
     DirName: String;
     Components, Tasks, Languages, Check: String;
+    Attribs: Integer;
     MinVersion, OnlyBelowVersion: TSetupVersionData;
     Options: set of (doUninsNeverUninstall, doDeleteAfterInstall,
       doUninsAlwaysUninstall);
@@ -293,6 +294,7 @@ sub SetupDirs {
 		$ret->[$i]->{Tasks} = $reader->ReadString();
 		$ret->[$i]->{Languages} = $reader->ReadString();
 		$ret->[$i]->{Check} = $reader->ReadString();
+		$ret->[$i]->{Attribs} = $reader->ReadInteger();
 		$ret->[$i]->{MinVersion} = $self->ReadVersion($reader);
 		$ret->[$i]->{OnlyBelowVersion} = $self->ReadVersion($reader);
 		$ret->[$i]->{Options} = $reader->ReadSet([ 'UninsNeverUninstall', 'DeleteAfterInstall', 'UninsAlwaysUninstall' ]);

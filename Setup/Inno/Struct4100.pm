@@ -161,6 +161,7 @@ sub SetupLanguages {
   TSetupDirEntry = packed record
     DirName: String;
     Components, Tasks, Languages, Check, AfterInstall, BeforeInstall: String;
+    Attribs: Integer;
     MinVersion, OnlyBelowVersion: TSetupVersionData;
     PermissionsEntry: Smallint;
     Options: set of (doUninsNeverUninstall, doDeleteAfterInstall,
@@ -175,6 +176,7 @@ sub SetupDirs {
 		for my $string (@strings) {
 			$ret->[$i]->{$string} = $reader->ReadString();
 		}
+		$ret->[$i]->{Attribs} = $reader->ReadInteger();
 		$ret->[$i]->{MinVersion} = $self->ReadVersion($reader);
 		$ret->[$i]->{OnlyBelowVersion} = $self->ReadVersion($reader);
 		$ret->[$i]->{PermissionsEntry} = $self->ReadSmallInt();
