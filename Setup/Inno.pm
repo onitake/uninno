@@ -7,6 +7,7 @@ use feature 'switch';
 use Fcntl;
 use IO::File;
 use Win::Exe;
+use Win::Exe::Util;
 use Setup::Inno::Struct;
 
 use constant {
@@ -30,7 +31,7 @@ sub new {
 	eval {
 		$self->{Input}->seek(SetupLdrExeHeaderOffset, Fcntl::SEEK_SET) || die("Can't seek to Inno header");
 		$self->{Input}->read(my $buffer, 12) || die("Can't get Inno header");
-		my $SetupLdrExeHeader = unpackbuffer($buffer, '(L3)<', 'ID', 'OffsetTableOffset', 'NotOffsetTableOffset');
+		my $SetupLdrExeHeader = unpackbinary($buffer, '(L3)<', 'ID', 'OffsetTableOffset', 'NotOffsetTableOffset');
 		($SetupLdrExeHeader->{ID} == SetupLdrExeHeaderID) || die("Unknown file type");
 		($SetupLdrExeHeader->{OffsetTableOffset} == ~$SetupLdrExeHeader->{NotOffsetTableOffset}) || die("Offset table pointer checksum error");
 		$self->{Input}->seek($SetupLdrExeHeader->{OffsetTableOffset}, Fcntl::SEEK_SET) || die("Can't seek to offset table");
@@ -45,6 +46,7 @@ sub new {
 		$self->{OffsetTable} = $self->{Struct}->ParseOffsetTable($OffsetTable);
 	};
 
+	print("Offset0 " . $self->Offset0() . "\n");
 	$self->{Input}->seek($self->Offset0(), Fcntl::SEEK_SET) || die("Can't seek to setup.0 offset");
 	$self->{Input}->read(my $buffer, 64) || die("Error reading setup ID");
 	my $TestID = unpack('Z64', $buffer);
