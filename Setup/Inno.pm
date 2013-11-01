@@ -9,6 +9,7 @@ use IO::File;
 use Win::Exe;
 use Win::Exe::Util;
 use Setup::Inno::Struct;
+use Carp;
 
 use constant {
 	SetupLdrExeHeaderOffset => 0x30,
@@ -29,26 +30,26 @@ sub new {
 	bless($self, $class);
 
 	eval {
-		$self->{Input}->seek(SetupLdrExeHeaderOffset, Fcntl::SEEK_SET) || die("Can't seek to Inno header");
-		$self->{Input}->read(my $buffer, 12) || die("Can't get Inno header");
+		$self->{Input}->seek(SetupLdrExeHeaderOffset, Fcntl::SEEK_SET) || croak("Can't seek to Inno header");
+		$self->{Input}->read(my $buffer, 12) || croak("Can't get Inno header");
 		my $SetupLdrExeHeader = unpackbinary($buffer, '(L3)<', 'ID', 'OffsetTableOffset', 'NotOffsetTableOffset');
-		($SetupLdrExeHeader->{ID} == SetupLdrExeHeaderID) || die("Unknown file type");
-		($SetupLdrExeHeader->{OffsetTableOffset} == ~$SetupLdrExeHeader->{NotOffsetTableOffset}) || die("Offset table pointer checksum error");
-		$self->{Input}->seek($SetupLdrExeHeader->{OffsetTableOffset}, Fcntl::SEEK_SET) || die("Can't seek to offset table");
-		$self->{Input}->read($buffer, 12) || die("Error reading offset table ID");
+		($SetupLdrExeHeader->{ID} == SetupLdrExeHeaderID) || croak("Unknown file type");
+		($SetupLdrExeHeader->{OffsetTableOffset} == ~$SetupLdrExeHeader->{NotOffsetTableOffset}) || croak("Offset table pointer checksum error");
+		$self->{Input}->seek($SetupLdrExeHeader->{OffsetTableOffset}, Fcntl::SEEK_SET) || croak("Can't seek to offset table");
+		$self->{Input}->read($buffer, 12) || croak("Error reading offset table ID");
 		$self->{Struct} = Setup::Inno::Struct->new($buffer);
-		$self->{Input}->read(my $buffer2, $self->{Struct}->OffsetTableSize() - 12) || die("Error reading offset table");
+		$self->{Input}->read(my $buffer2, $self->{Struct}->OffsetTableSize() - 12) || croak("Error reading offset table");
 		$self->{OffsetTable} = $self->{Struct}->ParseOffsetTable($buffer . $buffer2);
 	} or do {
 		my $exe = Win::Exe->new($self->{Input});
-		my $OffsetTable = $exe->FindResource('RcData', SetupLdrOffsetTableResID);
+		my $OffsetTable = $exe->FindResource('RcData', SetupLdrOffsetTableResID) || croak("Can't find offset table resource");
 		$self->{Struct} = Setup::Inno::Struct->new(substr($OffsetTable, 0, 12));
 		$self->{OffsetTable} = $self->{Struct}->ParseOffsetTable($OffsetTable);
 	};
 
-	print("Offset0 " . $self->Offset0() . "\n");
-	$self->{Input}->seek($self->Offset0(), Fcntl::SEEK_SET) || die("Can't seek to setup.0 offset");
-	$self->{Input}->read(my $buffer, 64) || die("Error reading setup ID");
+	#print("Offset0 " . $self->Offset0() . "\n");
+	$self->{Input}->seek($self->Offset0(), Fcntl::SEEK_SET) || croak("Can't seek to setup.0 offset");
+	$self->{Input}->read(my $buffer, 64) || croak("Error reading setup ID");
 	my $TestID = unpack('Z64', $buffer);
 	$self->{Struct}->ReBlessWithVersionString($TestID);
 	
@@ -61,6 +62,10 @@ sub Offset0 {
 
 sub Offset1 {
 	return shift()->{OffsetTable}->{Offset1};
+}
+
+sub TotalSize {
+	return shift()->{OffsetTable}->{TotalSize};
 }
 
 sub Version {
@@ -93,6 +98,7 @@ sub Setup0 {
 		# Get the current location so we can seek to the locations list later.
 		# It's stored in its own LZMA stream.
 		$self->{Setup0}->{OffsetLocations} = $self->{Input}->tell();
+		#printf("Locations offset: 0x%08x\n", $self->{Setup0}->{OffsetLocations});
 	}
 	return $self->{Setup0};
 }
@@ -101,8 +107,9 @@ sub FileLocations {
 	my ($self) = @_;
 	if (!$self->{FileLocations}) {
 		my $setup0 = $self->Setup0();
-		$self->{Input}->seek($setup0->{OffsetLocations}, 0);
+		$self->{Input}->seek($setup0->{OffsetLocations}, Fcntl::SEEK_SET);
 		my $reader = $self->{Struct}->FieldReader($self->{Input});
+		#while (1) { $self->{Input}->seek(0x01000000, Fcntl::SEEK_SET); }
 		$self->{FileLocations} = $self->{Struct}->SetupFileLocations($reader, $setup0->{Header}->{NumFileLocationEntries});
 	}
 	return $self->{FileLocations};
@@ -116,7 +123,7 @@ sub FileCount {
 
 sub FileInfo {
 	my ($self, $index) = @_;
-	($index < 0) && die("Negative file index");
+	($index < 0) && croak("Negative file index");
 	my $setup0 = $self->Setup0();
 	my $locations = $self->FileLocations();
 	my $file = $self->{Setup0}->{Files}->[$index];
@@ -125,7 +132,7 @@ sub FileInfo {
 	my $type;
 	my $name;
 	given ($file->{FileType}) {
-		when ('UserFile') {
+		when (/UserFile/i) {
 			$name = $file->{DestName};
 			given ($name) {
 				when (/^{app}/i) {
@@ -147,7 +154,7 @@ sub FileInfo {
 			$name =~ s/^{.*?}\\//;
 			$name =~ s#\\#/#g;
 		}
-		when ('UninstExe') {
+		when (/UninstExe/i) {
 			$type = 'UninstExe';
 			# TODO: Find out if the name of the uninstaller exe is found somewhere else
 			if ($file->{DestName}) {
@@ -156,7 +163,7 @@ sub FileInfo {
 				$name = DefaultUninstallExeName;
 			}
 		}
-		when ('RegSvrExe') {
+		when (/RegSvrExe/i) {
 			$type = 'RegSvrExe';
 			if ($file->{DestName}) {
 				$name = $file->{DestName};
@@ -172,8 +179,8 @@ sub FileInfo {
 	return {
 		Size => $location->{OriginalSize},
 		Date => $location->{TimeStamp},
-		Compressed => $location->{Flags}->{ChunkCompressed},
-		Encrypted => $location->{Flags}->{ChunkEncrypted},
+		Compressed => $location->{Flags}->{ChunkCompressed} || $location->{Flags}->{foChunkCompressed},
+		Encrypted => $location->{Flags}->{ChunkEncrypted} || $location->{Flags}->{foChunkEncrypted},
 		Type => $type,
 		OriginalName => $file->{DestName},
 		Name => $name,

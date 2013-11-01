@@ -20,23 +20,26 @@ sub ReadFile {
 	#print Dumper $location;
 	
 	# Note: once we support decryption, make sure the password is interpreted as UTF-16LE
-	($location->{Flags}->{ChunkEncrypted} && !defined($password)) && die("File is encrypted, but no password was given");
+	(($location->{Flags}->{ChunkEncrypted} || $location->{Flags}->{foChunkEncrypted}) && !defined($password)) && die("File is encrypted, but no password was given");
 	
 	$input->seek($location->{StartOffset}, Fcntl::SEEK_CUR);
 	$input->read(my $buffer, 4) || die("Can't read compressed block magic");
 	($buffer eq ZLIBID) || die("Compressed block ID invalid");
 
 	my $reader;
-	if ($location->{Flags}->{ChunkCompressed}) {
+	if ($location->{Flags}->{ChunkCompressed} || $location->{Flags}->{foChunkCompressed}) {
 		given ($self->Compression1($header)) {
-			when ('Zip') {
+			when (/Zip$/i) {
 				$reader = IO::Uncompress::AnyInflate->new($input, Transparent => 0) || die("Can't create zlib reader");
 			}
-			when ('Bzip') {
+			when (/Bzip$/i) {
 				$reader = IO::Uncompress::Bunzip2->new($input, Transparent => 0) || die("Can't create bzip2 reader");
 			}
-			when ('Lzma') {
+			when (/Lzma$/i) {
 				$reader = Setup::Inno::LzmaReader->new($input, $location->{ChunkCompressedSize}) || die("Can't create lzma reader");
+			}
+			when (/Lzma2$/i) {
+				$reader = Setup::Inno::Lzma2Reader->new($input, $location->{ChunkCompressedSize}) || die("Can't create lzma2 reader");
 			}
 			default {
 				# Plain reader for stored mode
@@ -47,10 +50,13 @@ sub ReadFile {
 		$reader = $input;
 	}
 	
+	#printf("Seeking to 0x%08x...\n", $location->{ChunkSuboffset});
 	$reader->seek($location->{ChunkSuboffset}, Fcntl::SEEK_CUR);
+	#print("Reading $location->{OriginalSize} bytes...\n");
 	($reader->read($buffer, $location->{OriginalSize}) >= $location->{OriginalSize}) || die("Can't uncompress file");
 	
-	if ($location->{Flags}->{CallInstructionOptimized}) {
+	if ($location->{Flags}->{CallInstructionOptimized} || $location->{Flags}->{foCallInstructionOptimized}) {
+		#print("Transforming binary file...\n");
 		# We could just transform the whole data, but this will expose a flaw in the original algorithm:
 		# It doesn't detect jump instructions across block boundaries.
 		# This means we need to process block by block like the original.
@@ -60,7 +66,8 @@ sub ReadFile {
 		}
 	}
 	
-	($self->CheckFile($buffer, $location->{Checksum})) || die("Invalid file checksum");
+	#print("Verifying checksum...\n");
+	($self->CheckFile($buffer, $location)) || die("Invalid file checksum");
 	
 	return $buffer;
 }

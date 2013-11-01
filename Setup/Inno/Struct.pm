@@ -66,7 +66,7 @@ sub Version {
 # Implement the correct checksum algorithm for each version.
 # Arguments:
 #   A string containing the file's data
-#   The checksum to compare against
+#   The file location entry
 sub CheckFile {
 	return 1;
 }
@@ -97,10 +97,10 @@ sub TransformCallInstructions {
 
 sub ReBlessWithVersionString {
 	my ($self, $verstr) = @_;
-	if ($verstr =~ /\(([0-9])\.([0-9])\.([0-9])([0-9])?([a-z])?\)/) {
+	if ($verstr =~ /\(([0-9])\.([0-9])\.([0-9])([0-9])?([a-z])?\)(\s*\(([a-z])?\))?/) {
 		my $version = "$1$2";
 		$version .= defined($4) ? "$3$4" : "0$3";
-		$version .= (defined($5) && $5 eq 'u') ? 'u' : '';
+		$version .= (defined($5) && $5 eq 'u') || (defined($7) && $7 eq 'u') ? 'u' : '';
 		require "Setup/Inno/Struct$version.pm";
 		bless($self, "Setup::Inno::Struct$version");
 		return $version;

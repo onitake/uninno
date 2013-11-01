@@ -31,15 +31,15 @@ sub ParseOffsetTable {
 }
 
 sub CheckFile {
-	my ($self, $data, $checksum) = @_;
+	my ($self, $data, $location) = @_;
 	my $digest = Digest->new('Adler-32');
 	$digest->add($data);
-	return $digest->digest() eq $checksum;
+	return $digest->digest() eq $location->{Checksum};
 }
 
 sub Compression1 {
 	my ($self, $header) = @_;
-	if (!defined($header->{CompressMethod}) || $header->{CompressMethod} eq 'Stored' || $header->{CompressMethod} eq 0) {
+	if (!defined($header->{CompressMethod}) || $header->{CompressMethod} =~ /Stored/i || $header->{CompressMethod} eq 0) {
 		return undef;
 	}
 	return $header->{CompressMethod};
@@ -47,7 +47,8 @@ sub Compression1 {
 
 # ZlibBlockReader4008
 sub FieldReader {
-	my ($self, $reader) = @_;
+	my ($self, $reader, $offset) = @_;
+	$reader->seek($offset, Fcntl::SEEK_SET);
 	my $creader = IO::Uncompress::AnyInflate->new($reader, Transparent => 0) || die("Can't create zlib decompressor");
 	my $freader = Setup::Inno::FieldReader->new($creader) || die("Can't create field reader");
 	return $freader;
@@ -94,7 +95,7 @@ sub ReadFile {
 	
 	($reader->read(my $buffer, $location->{OriginalSize}) >= $location->{OriginalSize}) || die("Can't uncompress file");
 	
-	($self->CheckFile($buffer, $location->{Checksum})) || die("Invalid file checksum");
+	($self->CheckFile($buffer, $location)) || die("Invalid file checksum");
 	
 	return $buffer;
 }

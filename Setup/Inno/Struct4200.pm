@@ -7,14 +7,10 @@ use base qw(Setup::Inno::Struct4108);
 use Digest;
 
 sub CheckFile {
-	my ($self, $data, $checksum) = @_;
+	my ($self, $data, $location) = @_;
 	my $digest = Digest->new('MD5');
 	$digest->add($data);
-	my $dig = $digest->digest();
-	#use Data::Hexdumper;
-	#print hexdump $dig;
-	#print hexdump $checksum;
-	return $dig eq $checksum;
+	return $digest->digest() eq $location->{Checksum};
 }
 
 =comment

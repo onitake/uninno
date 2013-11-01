@@ -4,10 +4,11 @@ package Win::Exe::Table;
 
 use strict;
 use feature 'switch';
+use Carp;
 
 sub all {
 	my ($class, $exe) = @_;
-	$exe->OptionalHeader()->HasTables() || die("Executable type doesn't support tables");
+	$exe->OptionalHeader()->HasTables() || croak("Executable type doesn't support tables");
 	my $ret = { };
 	for my $name (keys($exe->OptionalHeader()->{DataDirectory})) {
 		$ret->{$name} = $class->new($exe, $name);
@@ -54,7 +55,7 @@ sub new {
 			}
 		}
 	}
-	#warn("No interpretation for tables of type $name found, ignoring");
+	#carp("No interpretation for tables of type $name found, ignoring");
 	return bless({ }, $class);
 }
 

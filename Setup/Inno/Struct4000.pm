@@ -7,11 +7,11 @@ use base qw(Setup::Inno::Struct3007);
 use Digest;
 
 sub CheckFile {
-	my ($self, $data, $checksum) = @_;
+	my ($self, $data, $location) = @_;
 	my $digest = Digest->new('CRC-32');
 	$digest->add($data);
 	# CRC-32 produces a numeric result
-	return $digest->digest() == $checksum;
+	return $digest->digest() == $location->{Checksum};
 }
 
 sub SetupBinaries {
@@ -21,7 +21,7 @@ sub SetupBinaries {
 	$ret->{WizardImage} = $reader->ReadByteArray($wzimglength);
 	my $wzsimglength = $reader->ReadLongWord();
 	$ret->{WizardSmallImage} = $reader->ReadByteArray($wzsimglength);
-	if ($compression && $compression ne 'Lzma') {
+	if ($compression && $compression !~ /LZMA/i) {
 		my $cmpimglength = $reader->ReadLongWord();
 		$ret->{CompressImage} = $reader->ReadByteArray($cmpimglength);
 	}

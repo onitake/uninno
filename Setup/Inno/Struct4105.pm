@@ -9,12 +9,13 @@ use Setup::Inno::LzmaReader;
 use IO::File;
 
 sub FieldReader {
-	my ($self, $reader) = @_;
-	my $breader = Setup::Inno::BlockReader->new($reader, 4096) || die("Can't create block reader");
-	my $creader = $breader;
-	if ($breader->compressed()) {
-		$creader = Setup::Inno::LzmaReader->new($breader);
-	}
+	my ($self, $reader, $offset) = @_;
+	#my $breader = Setup::Inno::BlockReader->new($reader, 4096) || die("Can't create block reader");
+	#my $creader = $breader;
+	#if ($breader->compressed()) {
+	#	$creader = Setup::Inno::LzmaReader->new($breader);
+	#}
+	my $creader = Setup::Inno::BlockReaderNew->new($reader, $offset, 4096) || die("Can't create block reader");
 	my $freader = Setup::Inno::FieldReader->new($creader) || die("Can't create field reader");
 	return $freader;
 }

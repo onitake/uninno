@@ -46,30 +46,47 @@ use Encode;
 use POSIX qw(ceil);
 
 sub new {
-	my ($class, $reader) = @_;
-	return bless({ Reader => $reader }, $class);
+	my ($class, $reader, $debug) = @_;
+	return bless({ Reader => $reader, Debug => $debug }, $class);
 }
 
 sub reader {
 	return shift()->{Reader};
 }
 
-# Reads a Latin-1 (or binary) string
+# Reads a string, the type is determined by the argument
+# 0 or undefined: Binary string (no conversion)
+# 1: 8-bit string, using Windows codepage 1252
+# 2: Unicode string, using UTF-16
 sub ReadString {
-	my ($self) = @_;
+	my ($self, $coding) = @_;
+	warn("Reading 4 bytes from " . $self->{Reader}->tell) if $self->{Debug};
+	# Note that the length is the number of bytes, not characters
 	$self->{Reader}->read(my $buffer, 4) || die("Can't read string length");
 	my ($length) = unpack('L<', $buffer);
+	warn("Reading $length bytes from " . $self->{Reader}->tell) if $self->{Debug};
 	($self->{Reader}->read($buffer, $length) == $length) || die("Can't read string");
-	return $buffer;
+	if ($coding) {
+		if ($coding == 1) {
+			return decode('cp1252', $buffer);
+		} elsif ($coding == 2) {
+			return decode('UTF-16LE', $buffer);
+		}
+	} else {
+		return $buffer;
+	}
 }
 
-# Reads a UTF-16 string
+# Reads a CP-1252 (Windows Latin) string
+sub ReadAnsiString {
+	my ($self) = @_;
+	return $self->ReadString(1);
+}
+
+# Reads a UTF-16 string (actually UCS-2, but that was a bad design decision on Microsoft's side)
 sub ReadWideString {
 	my ($self) = @_;
-	$self->{Reader}->read(my $buffer, 4) || die("Can't read string length");
-	my ($length) = unpack('L<', $buffer);
-	($self->{Reader}->read($buffer, $length * 2) == $length * 2) || die("Can't read string");
-	return decode('UTF-16LE', $buffer);
+	return $self->ReadString(2);
 }
 
 # Reads a Delphi set of ...
@@ -77,7 +94,8 @@ sub ReadWideString {
 # value determining the number of bits required.
 # Arguments:
 #   The number of choices (bits) in the set
-#   (optional) An arrayref of field names
+#   or
+#   An arrayref of field names
 # Return:
 #   Set object, supporting get(bit #) and set(bit #, value) methods
 #   or (if fields names given)
@@ -94,6 +112,7 @@ sub ReadSet {
 		$bits = $fields;
 	}
 	my $bytes = ceil($bits / 8);
+	warn("Reading $bytes bytes") if $self->{Debug};
 	$self->{Reader}->read(my $buffer, $bytes) || die("Can't read set");
 	my $set = Setup::Inno::Set->new($buffer);
 	if (ref($fields) eq 'ARRAY') {
@@ -123,12 +142,16 @@ sub ReadEnum {
 	}
 	my $value;
 	if ($values - 1 <= 255) {
+		warn("Reading 1 byte") if $self->{Debug};
 		$value = $self->ReadByte();
 	} elsif ($values - 1 <= 65535) {
+		warn("Reading 2 bytes") if $self->{Debug};
 		$value = $self->ReadWord();
 	} elsif ($values - 1 <= 4294967295) {
+		warn("Reading 4 bytes") if $self->{Debug};
 		$value = $self->ReadLongWord();
 	} else {
+		warn("Reading 8 bytes") if $self->{Debug};
 		$value = $self->ReadInt64();
 	}
 	if (ref($names) eq 'ARRAY') {
@@ -161,60 +184,70 @@ sub ReadEnum {
  
 sub ReadByteArray {
 	my ($self, $length) = @_;
+	warn("Reading $length bytes") if $self->{Debug};
 	$self->{Reader}->read(my $buffer, $length) || die("Can't read byte array");
 	return $buffer;
 }
 
 sub ReadShortInt {
 	my ($self) = @_;
+	warn("Reading 1 byte") if $self->{Debug};
 	$self->{Reader}->read(my $buffer, 1) || die("Can't read byte");
 	return unpack('c', $buffer);
 }
 
 sub ReadByte {
 	my ($self) = @_;
+	warn("Reading 1 byte") if $self->{Debug};
 	$self->{Reader}->read(my $buffer, 1) || die("Can't read byte");
 	return unpack('C', $buffer);
 }
 
 sub ReadSmallInt {
 	my ($self) = @_;
+	warn("Reading 2 bytes") if $self->{Debug};
 	$self->{Reader}->read(my $buffer, 2) || die("Can't read word");
 	return unpack('s<', $buffer);
 }
 
 sub ReadWord {
 	my ($self) = @_;
+	warn("Reading 2 bytes") if $self->{Debug};
 	$self->{Reader}->read(my $buffer, 2) || die("Can't read word");
 	return unpack('S<', $buffer);
 }
 
 sub ReadLongInt {
 	my ($self) = @_;
+	warn("Reading 4 bytes") if $self->{Debug};
 	$self->{Reader}->read(my $buffer, 4) || die("Can't read longword");
 	return unpack('l<', $buffer);
 }
 
 sub ReadLongWord {
 	my ($self) = @_;
+	warn("Reading 4 bytes") if $self->{Debug};
 	$self->{Reader}->read(my $buffer, 4) || die("Can't read longword");
 	return unpack('L<', $buffer);
 }
 
 sub ReadSingle {
 	my ($self) = @_;
+	warn("Reading 4 bytes") if $self->{Debug};
 	$self->{Reader}->read(my $buffer, 4) || die("Can't read float");
 	return unpack('f<', $buffer);
 }
 
 sub ReadDouble {
 	my ($self) = @_;
+	warn("Reading 8 bytes") if $self->{Debug};
 	$self->{Reader}->read(my $buffer, 8) || die("Can't read double");
 	return unpack('d<', $buffer);
 }
 
 sub ReadInt64 {
 	my ($self) = @_;
+	warn("Reading 8 bytes") if $self->{Debug};
 	$self->{Reader}->read(my $buffer, 8) || die("Can't read quadword");
 	return unpack('q<', $buffer);
 }

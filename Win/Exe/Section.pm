@@ -73,8 +73,7 @@ sub new {
 	my $buffer;
 	$exe->{Input}->seek($exe->PeSectionOffset() + $number * 40, 0);
 	$exe->{Input}->read($buffer, 40);
-	my $self = unpackbinary($buffer, '(Z8L6S2L)<', 'Name', 'VirtualSize', 'VirtualAddress', 'SizeOfRawData', 'PointerToRawData', 'PointerToRelocations', 'PointerToLinenumbers',
-		'NumberOfRelocations', 'NumberOfLineNumbers', 'Characteristics');
+	my $self = unpackbinary($buffer, '(Z8L6S2L)<', 'Name', 'VirtualSize', 'VirtualAddress', 'SizeOfRawData', 'PointerToRawData', 'PointerToRelocations', 'PointerToLinenumbers', 'NumberOfRelocations', 'NumberOfLineNumbers', 'Characteristics');
 
 	return bless($self, $class);
 }

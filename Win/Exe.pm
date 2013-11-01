@@ -12,7 +12,7 @@ use Win::Exe::PeHeader;
 use Win::Exe::OptionalHeader;
 use Win::Exe::Section;
 use Win::Exe::Table;
-
+use Carp;
 use Data::Dumper;
 
 use overload (
@@ -31,7 +31,7 @@ sub new {
 	} else {
 		# interpret as filename
 		$self->{Filename} = $io;
-		$self->{Input} = IO::File->new($io, '<') || die("Can't open $io");
+		$self->{Input} = IO::File->new($io, '<') || croak("Can't open $io");
 		$self->{Input}->binmode();
 	}
 	
@@ -49,7 +49,7 @@ sub DosHeader {
 sub PeHeader {
 	my $self = shift;
 	if (!$self->{PeHeader}) {
-		$self->IsPeExe() || die("Can't find PE header");
+		$self->IsPeExe() || croak("Can't find PE header");
 		$self->{PeHeader} = Win::Exe::PeHeader->new($self);
 	}
 	return $self->{PeHeader};
@@ -101,7 +101,7 @@ sub FindVirtualAddress {
 		}
 	}
 	if ($address != 0) {
-		warn("Unmappable address $address");
+		carp("Unmappable address $address");
 	}
 	return -1;
 }
@@ -116,7 +116,7 @@ sub FindVirtualRange {
 		}
 	}
 	if ($size != 0) {
-		warn("Unmappable range ($address, $size)");
+		carp("Unmappable range ($address, $size)");
 	}
 	return -1;
 }

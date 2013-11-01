@@ -4,12 +4,14 @@ package Setup::Inno::Struct4009;
 
 use strict;
 use base qw(Setup::Inno::Struct4008);
+use Fcntl;
 use IO::Uncompress::AnyInflate;
 use Setup::Inno::FieldReader;
 
 # ZlibBlockReader4107
 sub FieldReader {
-	my ($self, $reader) = @_;
+	my ($self, $reader, $offset) = @_;
+	$reader->seek($offset, Fcntl::SEEK_SET);
 	my $creader = IO::Uncompress::AnyInflate->new($reader, Transparent => 0) || die("Can't create zlib decompressor");
 	my $freader = Setup::Inno::FieldReader->new($creader) || die("Can't create field reader");
 	return $freader;

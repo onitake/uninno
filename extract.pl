@@ -16,6 +16,7 @@ my $filename = $ARGV[0];
 my $inno = Setup::Inno->new($filename);
 
 print("Installer version: " . $inno->Version() . "\n");
+print("Number of files: " . $inno->FileCount() . "\n");
 
 mkdir("/tmp/uninno/");
 for (my $i = 0; $i < $inno->FileCount(); $i++) {
