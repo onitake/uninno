@@ -33,7 +33,7 @@ sub DWORD {
 	my ($self, $reader) = @_;
 	return $reader->ReadLongWord();
 }
-our sub TSetupHeader {
+sub TSetupHeader {
 	my ($self, $reader) = @_;
 	my $ret;
 	$ret = {
