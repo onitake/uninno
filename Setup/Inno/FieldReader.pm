@@ -70,7 +70,7 @@ sub ReadString {
 		($length) = unpack('L<', $buffer);
 	}
 	warn("Reading $length bytes from " . $self->{Reader}->tell) if $self->{Debug};
-	($self->{Reader}->read($buffer, $length) == $length) || die("Can't read string");
+	($self->{Reader}->read(my $buffer, $length) == $length) || die("Can't read string");
 	if ($coding) {
 		if ($coding == 1) {
 			return decode('cp1252', $buffer);
