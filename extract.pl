@@ -6,6 +6,7 @@ use diagnostics;
 use Setup::Inno;
 use IO::File;
 use File::Basename;
+use File::Path 'make_path';
 
 if (@ARGV < 1) {
 	print("Usage: extract.pl <setup.exe>\n");
@@ -25,8 +26,8 @@ for (my $i = 0; $i < $inno->FileCount(); $i++) {
 		printf("%u: %s %s %u %s %s%s\n", $i, $file->{Name}, $file->{Type}, $file->{Size}, $file->{Date}->format_cldr('yyyy-MM-dd HH:mm:ss'), $file->{Compressed} ? 'C' : '', $file->{Encrypted} ? 'E' : '');
 		my $data = $inno->ReadFile($i);
 		my $path = "/tmp/uninno/" . dirname($file->{Name});
-		mkdir($path);
-		my $output = IO::File->new("/tmp/uninno/" . $file->{Name}, '>') || die("Can't create " . "/tmp/uninno/" . $file->{Name});
+		make_path($path);
+		my $output = IO::File->new("/tmp/uninno/" . $file->{Name}, '>') || die("Can't create " . "/tmp/uninno/" . $file->{Name} . ": $^E");
 		print($output $data);
 	}
 }
