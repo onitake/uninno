@@ -54,16 +54,21 @@ sub reader {
 	return shift()->{Reader};
 }
 
-# Reads a string, the type is determined by the argument
-# 0 or undefined: Binary string (no conversion)
-# 1: 8-bit string, using Windows codepage 1252
-# 2: Unicode string, using UTF-16
+# Reads a string, the type is determined by the first argument
+# Arguments:
+#   The type of string
+#     0 or undefined: Binary string (no conversion)
+#     1: 8-bit string, using Windows codepage 1252
+#     2: Unicode string, using UTF-16
+#   The string length in bytes (only for fixed length strings)
 sub ReadString {
-	my ($self, $coding) = @_;
-	warn("Reading 4 bytes from " . $self->{Reader}->tell) if $self->{Debug};
-	# Note that the length is the number of bytes, not characters
-	$self->{Reader}->read(my $buffer, 4) || die("Can't read string length");
-	my ($length) = unpack('L<', $buffer);
+	my ($self, $coding, $length) = @_;
+	if (!defined($length)) {
+		warn("Reading 4 bytes from " . $self->{Reader}->tell) if $self->{Debug};
+		# Note that the length is the number of bytes, not characters
+		$self->{Reader}->read(my $buffer, 4) || die("Can't read string length");
+		($length) = unpack('L<', $buffer);
+	}
 	warn("Reading $length bytes from " . $self->{Reader}->tell) if $self->{Debug};
 	($self->{Reader}->read($buffer, $length) == $length) || die("Can't read string");
 	if ($coding) {
@@ -78,15 +83,19 @@ sub ReadString {
 }
 
 # Reads a CP-1252 (Windows Latin) string
+# Arguments:
+#   The string length (if fixed size, optional)
 sub ReadAnsiString {
-	my ($self) = @_;
-	return $self->ReadString(1);
+	my ($self, $length) = @_;
+	return $self->ReadString(1, $length);
 }
 
 # Reads a UTF-16 string (actually UCS-2, but that was a bad design decision on Microsoft's side)
+# Arguments:
+#   The string length (if fixed size, optional)
 sub ReadWideString {
-	my ($self) = @_;
-	return $self->ReadString(2);
+	my ($self, $length) = @_;
+	return $self->ReadString(2, $length);
 }
 
 # Reads a Delphi set of ...

@@ -258,20 +258,23 @@ sub ParserGenerator::defer0::makeparserbyfield {
 			when (/^Extended$/i) {
 				return "\$reader->ReadExtended()";
 			}
+			when (/^AnsiChar$/i) {
+				return "\$reader->ReadString(1, 1)";
+			}
+			when (/^WideChar$/i) {
+				return "\$reader->ReadString(2, 2)";
+			}
+			when (/^Char$/i) {
+				return "\$reader->ReadString(" . ($unicode ? "2, 2" : "1, 1" ) . ")";
+			}
 			when (/^AnsiString$/i) {
-				return "\$reader->ReadAnsiString()";
+				return "\$reader->ReadString(1)";
 			}
 			when (/^WideString$/i) {
-				return "\$reader->ReadWideString()";
+				return "\$reader->ReadString(2)";
 			}
 			when (/^String$/i) {
 				return "\$reader->ReadString(" . ($unicode ? 2 : 1 ) . ")";
-			}
-			when (/^TSHA1Digest$/) {
-				return "\$reader->ReadByteArray(20)";
-			}
-			when (/^TMD5Digest$/) {
-				return "\$reader->ReadByteArray(16)";
 			}
 			when (/^ByteBool$|^Boolean$/i) {
 				return "\$reader->ReadByte()";
@@ -351,8 +354,25 @@ sub ParserGenerator::array_type::makeparserbyfield {
 	my ($self, $root, $unicode, $indent) = @_;
 	my $indices = $self->[2]->arrayrange($root, $unicode, $indent);
 	croak("Arrays with more than 1 dimension aren't supported") if (@{$indices} > 1);
-	my $parser = $self->[5]->makeparserbyfield($root, $unicode, $indent);
-	return "[ map({ $parser; } $indices->[0]->[0]..$indices->[0]->[1]) ]";
+	given ($self->[5]->[0]) {
+		when (/^AnsiChar$/i) {
+			return "\$reader->ReadString(1, " . ($indices->[0]->[1] - $indices->[0]->[0] + 1) . ")";
+		}
+		when (/^WideChar$/i) {
+			return "\$reader->ReadString(2, " . (($indices->[0]->[1] - $indices->[0]->[0] + 1) * 2) . ")";
+		}
+		when (/^Char$/i) {
+			if ($unicode) {
+				return "\$reader->ReadString(2, " . (($indices->[0]->[1] - $indices->[0]->[0] + 1) * 2) . ")";
+			} else {
+				return "\$reader->ReadString(1, " . ($indices->[0]->[1] - $indices->[0]->[0] + 1) . ")";
+			}
+		}
+		default {
+			my $parser = $self->[5]->makeparserbyfield($root, $unicode, $indent);
+			return "[ map({ $parser; } $indices->[0]->[0]..$indices->[0]->[1]) ]";
+		}
+	}
 }
 
 

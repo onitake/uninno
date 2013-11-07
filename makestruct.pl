@@ -109,6 +109,14 @@ sub DWORD {
 	my (\$self, \$reader) = \@_;
 	return \$reader->ReadLongWord();
 }
+sub TSHA1Digest {
+	my (\$self, \$reader) = \@_;
+	return \$reader->ReadByteArray(20);
+}
+sub TMD5Digest {
+	my (\$self, \$reader) = \@_;
+	return \$reader->ReadByteArray(16);
+}
 EOF
 
 print("Generating parser for " . join(' ', @types) . "...\n");
