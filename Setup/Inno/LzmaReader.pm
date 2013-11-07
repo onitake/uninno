@@ -79,8 +79,6 @@ sub DESTROY {
 package Setup::Inno::Lzma2Reader;
 
 use strict;
-use base qw(IO::File);
-use File::Temp;
 use Carp;
 
 sub new {
@@ -101,7 +99,7 @@ sub new {
 	}
 	my $transform;
 	if (defined($arch) && $arch ne '') {
-		if ($arch =~ /^(x86|powerpc|ia64|arm|armthumb|sparc)/i) {
+		if ($arch =~ /^(x86|powerpc|ia64|arm|armthumb|sparc)$/i) {
 			$transform = '--' . lc($0);
 		} else {
 			croak("Invalid architecture for jump transform: $arch");
@@ -110,45 +108,52 @@ sub new {
 		$transform = '';
 	}
 	
-	# Create temporary file and consume data
-	# Note that automatic file removal is disabled as this can cause problems (early deletion etc.)
-	my $temp = File::Temp->new(UNLINK => 0) || croak("Can't create temp file");
+	# Read all data into memory
+	my $data;
 	if (defined($size)) {
 		# Subtract header first
 		$size -= 1;
 		# Consume as much as we're allowed to
-		while ($size) {
-			my $length = ($size > 4096) ? 4096 : $size;
-			my $rdbytes = $reader->read(my $buffer, $length);
-			($rdbytes == $length) || croak("Didn't get all data from stream (expected $length, got $rdbytes)");
-			$size -= $rdbytes;
-			$temp->write($buffer) || croak("Can't write to temp file");
-		}
+		my $rdbytes = $reader->read($data, $size);
+		($rdbytes == $size) || croak("Didn't get all data from stream (expected $size, got $rdbytes)");
 	} else {
 		# Consume everything the input gives us
 		while (!$reader->eof()) {
 			$reader->read(my $buffer, 4096) || croak("Can't read from stream");
-			$temp->write($buffer) || croak("Can't write to temp file");
+			$data .= $buffer;
 		}
 	}
-	my $tempfile = $temp->filename();
-	#$temp->close();
 	
-	# Spawn subprocess for decompression
-	my $self = $class->SUPER::new("xz --stdout --decompress --format=raw --lzma2=dict=$dictsize $transform $tempfile |") || croak("Can't open decompressor");
+	# Spawn a subprocess to feed the data to xz
+	my $pid = open(my $pipe, "-|");
+	if (!defined($pid)) {
+		croak("Can't fork streamer");
+	} elsif ($pid == 0) {
+		local $SIG{PIPE} = sub {
+			print(STDERR "Exiting due to SIGPIPE\n");
+			exit(1);
+		};
+		my $uncomppid = open(my $funnel, "|-");
+		if (!defined($uncomppid)) {
+			print(STDERR "Can't fork unpacker\n");
+			exit(2);
+		} elsif ($uncomppid == 0) {
+			if (!exec("xz --stdout --decompress --format=raw --lzma2=dict=$dictsize $transform")) {
+				print(STDERR "Can't execute xz utility\n");
+				exit(5);
+			}
+		}
+		
+		# Write the whole buffer into the pipe
+		$funnel->write($data);
+		
+		# Close and wait for completion
+		$funnel->close();
+		waitpid($uncomppid, 0) if defined($uncomppid);
+		exit(0);
+	}
 
-	# Store temp file name, this should work on IO::Handle type objects
-	*$self->{LzmaReaderTempFile} = $tempfile;
-
-	# Rebless file handle so we can override methods
-	return bless($self, $class);
-}
-
-# And all this hackery so we can make sure the temp file gets destroyed at the right time...
-sub DESTROY {
-	my $self = shift;
-	unlink(*$self->{LzmaReaderTempFile}) || carp("Can't delete temporary file");
-	$self->SUPER::DESTROY(@_);
+	return $pipe;
 }
 
 package Setup::Inno::LzmaReader3;
