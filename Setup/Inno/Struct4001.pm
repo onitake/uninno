@@ -19,7 +19,7 @@ sub ReadFile {
 	#use Data::Dumper;
 	#print Dumper $location;
 	
-	# Note: once we support decryption, make sure the password is interpreted as UTF-16LE
+	# Note: once we support decryption, make sure the password is interpreted as UTF-16LE (why?)
 	(($location->{Flags}->{ChunkEncrypted} || $location->{Flags}->{foChunkEncrypted}) && !defined($password)) && die("File is encrypted, but no password was given");
 	
 	$input->seek($location->{StartOffset}, Fcntl::SEEK_CUR);
@@ -51,7 +51,7 @@ sub ReadFile {
 	}
 	
 	#printf("Seeking to 0x%08x...\n", $location->{ChunkSuboffset});
-	$reader->seek($location->{ChunkSuboffset}, Fcntl::SEEK_CUR);
+	$reader->read(undef, $location->{ChunkSuboffset}, Fcntl::SEEK_CUR);
 	#print("Reading $location->{OriginalSize} bytes...\n");
 	($reader->read($buffer, $location->{OriginalSize}) >= $location->{OriginalSize}) || die("Can't uncompress file");
 	

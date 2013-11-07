@@ -130,7 +130,7 @@ sub new {
 		croak("Can't fork streamer");
 	} elsif ($pid == 0) {
 		local $SIG{PIPE} = sub {
-			print(STDERR "Exiting due to SIGPIPE\n");
+			#print(STDERR "Exiting due to SIGPIPE\n");
 			exit(1);
 		};
 		my $uncomppid = open(my $funnel, "|-");
