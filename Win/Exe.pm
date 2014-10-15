@@ -4,7 +4,7 @@ package Win::Exe;
 
 use strict;
 use warnings;
-use feature 'switch';
+use Switch 'Perl6';
 use IO::File;
 use Win::Exe::Util;
 use Win::Exe::DosHeader;
@@ -94,21 +94,21 @@ sub IsPeExe {
 
 sub FindVirtualAddress {
 	my ($self, $address) = @_;
-	for my $section (keys($self->Sections())) {
+	for my $section (keys(%{$self->Sections()})) {
 		my $pointer = $section->VaToPointer($address);
 		if ($pointer != -1) {
 			return $pointer;
 		}
 	}
 	if ($address != 0) {
-		carp("Unmappable address $address");
+		#carp("Unmappable address $address");
 	}
 	return -1;
 }
 
 sub FindVirtualRange {
 	my ($self, $address, $size) = @_;
-	for my $section (values($self->Sections())) {
+	for my $section (values(%{$self->Sections()})) {
 		my $pointer = $section->VaToPointer($address);
 		if ($pointer != -1) {
 			my $end = $section->VaToPointer($address + $size);
@@ -116,7 +116,7 @@ sub FindVirtualRange {
 		}
 	}
 	if ($size != 0) {
-		carp("Unmappable range ($address, $size)");
+		#carp("Unmappable range ($address, $size)");
 	}
 	return -1;
 }
@@ -133,11 +133,11 @@ sub Describe {
 	$ret .= $self->PeHeader()->Describe("  ");
 	$ret .= $self->OptionalHeader()->Describe("  ");
 	$ret .= "  Sections:\n";
-	for my $section (values($self->Sections())) {
+	for my $section (values(%{$self->Sections()})) {
 		$ret .= $section->Describe("    ");
 	}
 	$ret .= "  Tables:\n";
-	for my $table (values($self->Tables())) {
+	for my $table (values(%{$self->Tables()})) {
 		$ret .= $table->Describe("    ");
 	}
 	return $ret;

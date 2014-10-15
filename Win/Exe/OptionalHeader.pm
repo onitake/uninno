@@ -3,7 +3,7 @@
 package Win::Exe::OptionalHeader;
 
 use strict;
-use feature 'switch';
+use Switch 'Perl6';
 
 sub new {
 	my ($class, $exe) = @_;
@@ -113,7 +113,7 @@ sub Describe {
 	$ret .= sprintf("${prefix}Loader flags: 0x%08x\n", $self->{LoaderFlags});
 	$ret .= sprintf("${prefix}RVA and size entries: %u\n", $self->{NumberOfRvaAndSizes});
 	$ret .= sprintf("${prefix}Tables:\n");
-	for my $key (keys($self->{DataDirectory})) {
+	for my $key (keys(%{$self->{DataDirectory}})) {
 		my $entry = $self->{DataDirectory}->{$key};
 		if ($entry->{VirtualAddress} && $entry->{Size}) {
 			$ret .= sprintf("${prefix}  %s: %u bytes @ 0x%08x\n", $key, $entry->{Size}, $entry->{VirtualAddress});
@@ -125,7 +125,7 @@ sub Describe {
 sub Characteristics {
 	my $self = shift;
 	my @characteristics;
-	for my $key (keys(Win32Characteristic)) {
+	for my $key (keys(%{(Win32Characteristic)})) {
 		if ($self->{DllCharacteristics} & Win32Characteristic->{$key}) {
 			push(@characteristics, $key);
 		}
@@ -135,7 +135,7 @@ sub Characteristics {
 
 sub SubsystemName {
 	my $self = shift;
-	my @names = map { $self->{Subsystem} == Subsystem->{$_} ? $_ : () } keys(Subsystem);
+	my @names = map { $self->{Subsystem} == Subsystem->{$_} ? $_ : () } keys(%{(Subsystem)});
 	return $names[0];
 }
 

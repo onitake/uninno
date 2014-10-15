@@ -11,6 +11,10 @@ sub CheckFile {
 	my $digest = Digest->new('SHA-1');
 	$digest->add($data);
 	if (defined($location->{SHA1Sum})) {
+		#my $sum = $digest->digest();
+		#warn("sha1(data)=" . unpack('H*', $sum) . " sha1sum=" . unpack('H*',  $location->{SHA1Sum})) if $sum ne $location->{SHA1Sum};
+		#return $sum eq $location->{SHA1Sum};
+		#return 1;
 		return $digest->digest() eq $location->{SHA1Sum};
 	} else {
 		return $digest->digest() eq $location->{Checksum};

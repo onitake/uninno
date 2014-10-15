@@ -1,7 +1,7 @@
 package Setup::Inno::BlockReaderNew;
 
 use strict;
-use feature 'switch';
+use Switch 'Perl6';
 use Fcntl;
 use Symbol ();
 use Digest;

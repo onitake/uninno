@@ -4,7 +4,7 @@ package Setup::Inno::Struct2008;
 
 use strict;
 use base qw(Setup::Inno::Struct);
-use feature 'switch';
+use Switch 'Perl6';
 use Fcntl;
 use Digest;
 use IO::Uncompress::AnyInflate;

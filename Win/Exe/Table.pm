@@ -3,14 +3,14 @@
 package Win::Exe::Table;
 
 use strict;
-use feature 'switch';
+use Switch 'Perl6';
 use Carp;
 
 sub all {
 	my ($class, $exe) = @_;
 	$exe->OptionalHeader()->HasTables() || croak("Executable type doesn't support tables");
 	my $ret = { };
-	for my $name (keys($exe->OptionalHeader()->{DataDirectory})) {
+	for my $name (keys(%{$exe->OptionalHeader()->{DataDirectory}})) {
 		$ret->{$name} = $class->new($exe, $name);
 	}
 	return $ret;

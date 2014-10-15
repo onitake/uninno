@@ -3,7 +3,7 @@
 package Win::Exe::PeHeader;
 
 use strict;
-use feature 'switch';
+use Switch 'Perl6';
 use Win::Exe::Util;
 
 use constant {
@@ -166,7 +166,7 @@ sub MachineName {
 sub Characteristics {
 	my $self = shift;
 	my @characteristics;
-	for my $key (keys(PeCharacteristic)) {
+	for my $key (keys(%{(PeCharacteristic)})) {
 		if ($self->{Characteristics} & PeCharacteristic->{$key}) {
 			push(@characteristics, $key);
 		}

@@ -3,7 +3,7 @@
 package Setup::Inno::Struct;
 
 use strict;
-use feature 'switch';
+use Switch 'Perl6';
 use Setup::Inno::FieldReader;
 
 use constant {

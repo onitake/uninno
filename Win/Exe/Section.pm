@@ -94,7 +94,7 @@ sub Describe {
 sub Characteristics {
 	my $self = shift;
 	my @characteristics;
-	for my $key (keys(SectionCharacteristic)) {
+	for my $key (keys(%{(SectionCharacteristic)})) {
 		if ($self->{Characteristics} & SectionCharacteristic->{$key}) {
 			push(@characteristics, $key);
 		}

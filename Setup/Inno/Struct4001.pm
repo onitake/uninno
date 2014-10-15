@@ -4,7 +4,7 @@ package Setup::Inno::Struct4001;
 
 use strict;
 use base qw(Setup::Inno::Struct4000);
-use feature 'switch';
+use Switch 'Perl6';
 use Fcntl;
 use IO::Uncompress::AnyInflate;
 use IO::Uncompress::Bunzip2;

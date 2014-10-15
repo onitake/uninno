@@ -3,7 +3,7 @@
 package Setup::Inno;
 
 use strict;
-use feature 'switch';
+use Switch 'Perl6';
 use Fcntl;
 use IO::File;
 use Win::Exe;
