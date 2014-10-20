@@ -33,6 +33,14 @@ sub DWORD {
 	my ($self, $reader) = @_;
 	return $reader->ReadLongWord();
 }
+sub TSHA1Digest {
+	my ($self, $reader) = @_;
+	return $reader->ReadByteArray(20);
+}
+sub TMD5Digest {
+	my ($self, $reader) = @_;
+	return $reader->ReadByteArray(16);
+}
 sub TSetupHeader {
 	my ($self, $reader) = @_;
 	my $ret;
@@ -64,10 +72,10 @@ sub TSetupHeader {
 		CreateUninstallRegKey => $reader->ReadString(2),
 		Uninstallable => $reader->ReadString(2),
 		CloseApplicationsFilter => $reader->ReadString(2),
-		LicenseText => $reader->ReadAnsiString(),
-		InfoBeforeText => $reader->ReadAnsiString(),
-		InfoAfterText => $reader->ReadAnsiString(),
-		CompiledCodeText => $reader->ReadAnsiString(),
+		LicenseText => $reader->ReadString(1),
+		InfoBeforeText => $reader->ReadString(1),
+		InfoAfterText => $reader->ReadString(1),
+		CompiledCodeText => $reader->ReadString(1),
 		NumLanguageEntries => $reader->ReadInteger(),
 		NumCustomMessageEntries => $reader->ReadInteger(),
 		NumPermissionEntries => $reader->ReadInteger(),
@@ -97,8 +105,8 @@ sub TSetupHeader {
 		BackColor => $reader->ReadLongInt(),
 		BackColor2 => $reader->ReadLongInt(),
 		WizardImageBackColor => $reader->ReadLongInt(),
-		PasswordHash => $reader->ReadByteArray(20),
-		PasswordSalt => [ map({ $reader->ReadByte(); } 0..7) ],
+		PasswordHash => $self->TSHA1Digest($reader),
+		PasswordSalt => [ map({ $reader->ReadByte() } (0..7)) ],
 		ExtraDiskSpaceRequired => $reader->ReadInt64(),
 		SlicesPerDisk => $reader->ReadInteger(),
 		UninstallLogMode => $reader->ReadEnum([ 'lmAppend', 'lmNew', 'lmOverwrite' ]),
@@ -126,10 +134,10 @@ sub TSetupLanguageEntry {
 		TitleFontName => $reader->ReadString(2),
 		WelcomeFontName => $reader->ReadString(2),
 		CopyrightFontName => $reader->ReadString(2),
-		Data => $reader->ReadAnsiString(),
-		LicenseText => $reader->ReadAnsiString(),
-		InfoBeforeText => $reader->ReadAnsiString(),
-		InfoAfterText => $reader->ReadAnsiString(),
+		Data => $reader->ReadString(1),
+		LicenseText => $reader->ReadString(1),
+		InfoBeforeText => $reader->ReadString(1),
+		InfoAfterText => $reader->ReadString(1),
 		LanguageID => $reader->ReadCardinal(),
 		DialogFontSize => $reader->ReadInteger(),
 		TitleFontSize => $reader->ReadInteger(),
@@ -153,7 +161,7 @@ sub TSetupPermissionEntry {
 	my ($self, $reader) = @_;
 	my $ret;
 	$ret = {
-		Permissions => $reader->ReadAnsiString(),
+		Permissions => $reader->ReadString(1),
 	};
 	return $ret;
 }
@@ -455,7 +463,7 @@ sub TSetupFileLocationEntry {
 		ChunkSuboffset => $reader->ReadInt64(),
 		OriginalSize => $reader->ReadInt64(),
 		ChunkCompressedSize => $reader->ReadInt64(),
-		SHA1Sum => $reader->ReadByteArray(20),
+		SHA1Sum => $self->TSHA1Digest($reader),
 		TimeStamp => $self->TFileTime($reader),
 		FileVersionMS => $self->DWORD($reader),
 		FileVersionLS => $self->DWORD($reader),

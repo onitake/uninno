@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use feature qw(switch);
+use Switch 'Perl6';
 use Marpa::R2;
 use Getopt::Long;
 use ParserGenerator;

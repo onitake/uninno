@@ -2,8 +2,9 @@
 
 use strict;
 use Cwd;
-use File::Temp;
 use Getopt::Long;
+use ParserGenerator;
+use DelphiGrammar;
 
 my ($help, $parser, $git, $issrc, $version, $base) = (undef, './makeparser.pl', 'git', undef, undef, 'Setup::Inno::Struct');
 GetOptions(
@@ -48,6 +49,7 @@ my $tag = sprintf('is-%u_%u_%u', $major, $minor, $micro);
 my $module = sprintf('Struct%u%u%02u%s', $major, $minor, $micro, $unicode ? 'u' : '');
 my $output = "$module.pm";
 my $package = "Setup::Inno::$module";
+my $input = $issrc . '/Projects/Struct.pas';
 
 sub checkout {
 	my $dir = cwd();
@@ -56,18 +58,44 @@ sub checkout {
 	chdir($dir);
 }
 
-sub struct {
-	my $temp = File::Temp->new();
-	system($parser, '--input', $issrc . '/Projects/Struct.pas', '--output', $temp->filename, $unicode ? '--unicode' : '--ansi', map({ ('--type', $_) } @_)) == 0 || die("Can't run parser script");
-	my $ret;
-	while (<$temp>) {
-		$ret .= $_;
+sub preprocess {
+	my ($data) = @_;
+	if ($unicode) {
+		$$data =~ s/{\$IFDEF UNICODE}(.*?)({\$ELSE}(.*?))?{\$ENDIF}/$1/gs;
+		$$data =~ s/{\$IFNDEF UNICODE}(.*?)({\$ELSE}(.*?))?{\$ENDIF}/$3/gs;
+	} else {
+		$$data =~ s/{\$IFNDEF UNICODE}(.*?)({\$ELSE}(.*?))?{\$ENDIF}/$1/gs;
+		$$data =~ s/{\$IFDEF UNICODE}(.*?)({\$ELSE}(.*?))?{\$ENDIF}/$3/gs;
 	}
-	return $ret;
+}
+
+sub generate {
+	my ($out, $data, @types) = @_;
+	
+	my $re = DelphiGrammar->R('::array', 'ParserGenerator');
+	$re->read(\$data) || die("Error parsing input: $$");
+	my $value = ${$re->value};
+
+	for my $typename (@types) {
+		my $type = $value->findtype($typename);
+		if (defined($type)) {
+			print($out $type->parserbyfield($value, $unicode));
+		} else {
+			warn("Type $typename not found, ignoring");
+		}
+	}
 }
 
 print("Checking out tag $tag...\n");
 checkout();
+
+print("Reading $input...\n");
+open(my $in, '<', $input);
+my $data = do { local $/; <$in> } or die;
+undef($in);
+
+print("Preprocessing...\n");
+preprocess(\$data);
 
 print("Writing to $output...\n");
 open(my $out, '>', $output);
@@ -119,6 +147,6 @@ sub TMD5Digest {
 }
 EOF
 
-print("Generating parser for " . join(' ', @types) . "...\n");
-print($out struct(@types));
+print("Generating parser for " . join(', ', @types) . "...\n");
+generate($out, $data, @types);
 print($out "1;\n");

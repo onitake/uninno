@@ -99,13 +99,13 @@ our $GRAMMAR = <<'END_OF_SOURCE';
 	<real type identifier> ::= 'Real' | 'Single' | 'Double' | 'Extended' | 'Comp'
 	
 	<ordinal type> ::= <subrange type> bless => defer0 | <enumerated type> bless => defer0 | <ordinal type identifier> bless => defer0
-	<ordinal type identifier> ::= 'Integer' | 'ShortInt' | 'SmallInt' | 'LongInt' | 'Byte' | 'Word' | 'Cardinal' | 'Boolean' | 'ByteBool' | 'WordBool' | 'LongBool' | 'Char'
+	<ordinal type identifier> ::= 'Integer' | 'ShortInt' | 'SmallInt' | 'Smallint' | 'LongInt' | 'Longint' | 'Byte' | 'Word' | 'Cardinal' | 'Boolean' | 'ByteBool' | 'WordBool' | 'LongBool' | 'Char' | 'AnsiChar' | 'WideChar' | 'Integer64'
 	
 	<enumerated type> ::= '(' <identifier list> ')' 
 	
 	<subrange type> ::= <constant> '..' <constant>
 
-	<string type> ::= 'String' | 'String' '[' <unsigned integer> ']'
+	<string type> ::= 'String' | 'String' '[' <unsigned integer> ']' | 'AnsiString' | 'AnsiString' '[' <unsigned integer> ']' |  'WideString' | 'WideString' '[' <unsigned integer> ']'
 	
 	<structured type> ::= 'packed' <structured type list> | <structured type list>
 	<structured type list> ::= <array type> bless => defer0 | <record type> bless => defer0 | <identifier> bless => defer0 | <class reference type> bless => defer0 | <set type> bless => defer0 | <file type> bless => defer0

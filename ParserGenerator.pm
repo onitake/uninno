@@ -1,6 +1,8 @@
 use strict;
-use feature 'switch';
+use Switch 'Perl6';
 use Carp;
+use Data::Dumper;
+$Data::Dumper::Indent = 1;
 
 sub ParserGenerator::unit::types {
 	my $self = shift;
@@ -218,83 +220,95 @@ sub ParserGenerator::defer0::makeparserbyfield {
 	if (ref($self->[0])) {
 		return $self->[0]->makeparserbyfield($root, $unicode, $indent);
 	} else {
-		given ($self->[0]) {
-			when (/^Byte$/i) {
-				return "\$reader->ReadByte()";
-			}
-			when (/^ShortInt$/i) {
-				return "\$reader->ReadShortInt()";
-			}
-			when (/^Word$/i) {
-				return "\$reader->ReadWord()";
-			}
-			when (/^SmallInt$/i) {
-				return "\$reader->ReadSmallInt()";
-			}
-			when (/^LongWord$/i) {
-				return "\$reader->ReadLongWord()";
-			}
-			when (/^Cardinal$/i) {
-				return "\$reader->ReadCardinal()";
-			}
-			when (/^LongInt$/i) {
-				return "\$reader->ReadLongInt()";
-			}
-			when (/^Integer$/i) {
-				return "\$reader->ReadInteger()";
-			}
-			when (/^Int64$|^Integer64$/i) {
-				return "\$reader->ReadInt64()";
-			}
-			when (/^Single$/i) {
-				return "\$reader->ReadSingle()";
-			}
-			when (/^Currency$/i) {
-				return "\$reader->ReadCurrency()";
-			}
-			when (/^Double$/i) {
-				return "\$reader->ReadDouble()";
-			}
-			when (/^Extended$/i) {
-				return "\$reader->ReadExtended()";
-			}
-			when (/^AnsiChar$/i) {
-				return "\$reader->ReadString(1, 1)";
-			}
-			when (/^WideChar$/i) {
-				return "\$reader->ReadString(2, 2)";
-			}
-			when (/^Char$/i) {
-				return "\$reader->ReadString(" . ($unicode ? "2, 2" : "1, 1" ) . ")";
-			}
-			when (/^AnsiString$/i) {
-				return "\$reader->ReadString(1)";
-			}
-			when (/^WideString$/i) {
-				return "\$reader->ReadString(2)";
-			}
-			when (/^String$/i) {
-				return "\$reader->ReadString(" . ($unicode ? 2 : 1 ) . ")";
-			}
-			when (/^ByteBool$|^Boolean$/i) {
-				return "\$reader->ReadByte()";
-			}
-			when (/^WordBool$/i) {
-				return "\$reader->ReadWord()";
-			}
-			when (/^LongBool$/i) {
-				return "\$reader->ReadLongWord()";
-			}
-			default {
-				#warn("Need to fetch type information of $self->[0] for terminal");
-				my $subtype = $root->findtype($self->[0]);
-				if (defined($subtype)) {
-					return $subtype->makeparserbyfield($root, $unicode, $indent);
-				} else {
-					warn("Type $self->[0] not found, generating call to external parser");
-					return "\$self->$self->[0](\$reader)";
-				}
-			}
+		#carp("Need to fetch type information of $self->[0] for terminal");
+		my $subtype = $root->findtype($self->[0]);
+		if (defined($subtype)) {
+			return $subtype->makeparserbyfield($root, $unicode, $indent);
+		} else {
+			warn("Type $self->[0] not found, generating call to external parser");
+			return "\$self->$self->[0](\$reader)";
+		}
+	}
+}
+
+sub ParserGenerator::string_type::makeparserbyfield {
+	my ($self, $root, $unicode, $indent) = @_;
+	given ($self->[0]) {
+		when (/^AnsiString$/i) {
+			return "\$reader->ReadString(1" . (defined($self->[2]) ? (", " . $self->[2] . ")") : ")");
+		}
+		when (/^WideString$/i) {
+			return "\$reader->ReadString(2" . (defined($self->[2]) ? (", " . ($self->[2] * 2) . ")") : ")");
+		}
+		when (/^String/i) {
+			return "\$reader->ReadString(" . ($unicode ? "2" : "1" ) . (defined($self->[2]) ? (", " . $self->[2] . ")") : ")");
+		}
+	}
+	return undef;
+}
+
+sub ParserGenerator::ordinal_type_identifier::makeparserbyfield {
+	my ($self, $root, $unicode, $indent) = @_;
+	given ($self->[0]) {
+		when (/^Byte$/i) {
+			return "\$reader->ReadByte()";
+		}
+		when (/^ShortInt$/i) {
+			return "\$reader->ReadShortInt()";
+		}
+		when (/^Word$/i) {
+			return "\$reader->ReadWord()";
+		}
+		when (/^SmallInt$/i) {
+			return "\$reader->ReadSmallInt()";
+		}
+		when (/^LongWord$/i) {
+			return "\$reader->ReadLongWord()";
+		}
+		when (/^Cardinal$/i) {
+			return "\$reader->ReadCardinal()";
+		}
+		when (/^LongInt$/i) {
+			return "\$reader->ReadLongInt()";
+		}
+		when (/^Integer$/i) {
+			return "\$reader->ReadInteger()";
+		}
+		when (/^Int64$|^Integer64$/i) {
+			return "\$reader->ReadInt64()";
+		}
+		when (/^Single$/i) {
+			return "\$reader->ReadSingle()";
+		}
+		when (/^Currency$/i) {
+			return "\$reader->ReadCurrency()";
+		}
+		when (/^Double$/i) {
+			return "\$reader->ReadDouble()";
+		}
+		when (/^Extended$/i) {
+			return "\$reader->ReadExtended()";
+		}
+		when (/^AnsiChar$/i) {
+			return "\$reader->ReadString(1, 1)";
+		}
+		when (/^WideChar$/i) {
+			return "\$reader->ReadString(2, 2)";
+		}
+		when (/^Char$/i) {
+			return "\$reader->ReadString(" . ($unicode ? "2, 2)" : "1, 1)");
+		}
+		when (/^ByteBool$|^Boolean$/i) {
+			return "\$reader->ReadByte()";
+		}
+		when (/^WordBool$/i) {
+			return "\$reader->ReadWord()";
+		}
+		when (/^LongBool$/i) {
+			return "\$reader->ReadLongWord()";
+		}
+		default {
+			return undef;
 		}
 	}
 }
@@ -353,26 +367,28 @@ sub ParserGenerator::fixed_fragment::makeparserbyfield {
 sub ParserGenerator::array_type::makeparserbyfield {
 	my ($self, $root, $unicode, $indent) = @_;
 	my $indices = $self->[2]->arrayrange($root, $unicode, $indent);
-	croak("Arrays with more than 1 dimension aren't supported") if (@{$indices} > 1);
-	given ($self->[5]->[0]) {
-		when (/^AnsiChar$/i) {
-			return "\$reader->ReadString(1, " . ($indices->[0]->[1] - $indices->[0]->[0] + 1) . ")";
+	#warn Dumper($indices);
+	my $type = $self->[5]->makeparserbyfield($root, $unicode, $indent);
+	#warn Dumper($type);
+	my $parser = $type;
+	for my $index (reverse(@{$indices})) {
+		my $first;
+		my $last;
+		if (ref($index)) {
+			$first = $index->[0];
+			$last = $index->[1];
+		} else {
+			$first = 0;
+			$last = $index - 1;
 		}
-		when (/^WideChar$/i) {
-			return "\$reader->ReadString(2, " . (($indices->[0]->[1] - $indices->[0]->[0] + 1) * 2) . ")";
-		}
-		when (/^Char$/i) {
-			if ($unicode) {
-				return "\$reader->ReadString(2, " . (($indices->[0]->[1] - $indices->[0]->[0] + 1) * 2) . ")";
-			} else {
-				return "\$reader->ReadString(1, " . ($indices->[0]->[1] - $indices->[0]->[0] + 1) . ")";
-			}
-		}
-		default {
-			my $parser = $self->[5]->makeparserbyfield($root, $unicode, $indent);
-			return "[ map({ $parser; } $indices->[0]->[0]..$indices->[0]->[1]) ]";
+		if ($first == 0) {
+			$parser = "[ map({ $parser } ($first..$last)) ]";
+		} else {
+			$parser = "{ map({ \$_ => $parser } ($first..$last)) }";
 		}
 	}
+	#warn Dumper($parser);
+	return $parser;
 }
 
 
@@ -455,10 +471,12 @@ sub ParserGenerator::term::evaluate {
 					$sum &= $i < @{$self->[0]} - 1 ? $self->[0]->[$i + 1]->[1]->evaluate($root, $unicode, $indent) : $self->[1]->evaluate($root, $unicode, $indent);
 				}
 				when (/^Shr$/i) {
-					$sum <<= $i < @{$self->[0]} - 1 ? $self->[0]->[$i + 1]->[1]->evaluate($root, $unicode, $indent) : $self->[1]->evaluate($root, $unicode, $indent);
+					carp("Right shift operator not supported");
+					#$sum >>= $i < @{$self->[0]} - 1 ? $self->[0]->[$i + 1]->[1]->evaluate($root, $unicode, $indent) : $self->[1]->evaluate($root, $unicode, $indent);
 				}
 				when (/^Shl$/i) {
-					$sum >>= $i < @{$self->[0]} - 1 ? $self->[0]->[$i + 1]->[1]->evaluate($root, $unicode, $indent) : $self->[1]->evaluate($root, $unicode, $indent);
+					carp("Left shift operator not supported");
+					#$sum <<= $i < @{$self->[0]} - 1 ? $self->[0]->[$i + 1]->[1]->evaluate($root, $unicode, $indent) : $self->[1]->evaluate($root, $unicode, $indent);
 				}
 				when (/^As$/i) {
 					carp("Type cast operator not supported");
