@@ -8,8 +8,9 @@ use Fcntl;
 use IO::File;
 use Win::Exe;
 use Win::Exe::Util;
-use Setup::Inno::Struct;
+use Setup::Inno::Interpret;
 use Carp;
+use Data::Dumper;
 
 use constant {
 	SetupLdrExeHeaderOffset => 0x30,
@@ -37,23 +38,38 @@ sub new {
 		($SetupLdrExeHeader->{OffsetTableOffset} == ~$SetupLdrExeHeader->{NotOffsetTableOffset}) || croak("Offset table pointer checksum error");
 		$self->{Input}->seek($SetupLdrExeHeader->{OffsetTableOffset}, Fcntl::SEEK_SET) || croak("Can't seek to offset table");
 		$self->{Input}->read($buffer, 12) || croak("Error reading offset table ID");
-		$self->{Struct} = Setup::Inno::Struct->new($buffer);
-		$self->{Input}->read(my $buffer2, $self->{Struct}->OffsetTableSize() - 12) || croak("Error reading offset table");
-		$self->{OffsetTable} = $self->{Struct}->ParseOffsetTable($buffer . $buffer2);
+		$self->{Interpreter} = Setup::Inno::Interpret->new($buffer);
+		$self->{Input}->read(my $buffer2, $self->{Interpreter}->OffsetTableSize() - 12) || croak("Error reading offset table");
+		$self->{OffsetTable} = $self->{Interpreter}->ParseOffsetTable($buffer . $buffer2);
 	} or do {
 		my $exe = Win::Exe->new($self->{Input});
 		my $OffsetTable = $exe->FindResource('RcData', SetupLdrOffsetTableResID) || croak("Can't find offset table resource");
-		$self->{Struct} = Setup::Inno::Struct->new(substr($OffsetTable, 0, 12));
-		$self->{OffsetTable} = $self->{Struct}->ParseOffsetTable($OffsetTable);
+		$self->{Interpreter} = Setup::Inno::Interpret->new(substr($OffsetTable, 0, 12));
+		$self->{OffsetTable} = $self->{Interpreter}->ParseOffsetTable($OffsetTable);
 	};
-
+	
 	#print("Offset0 " . $self->Offset0() . "\n");
 	$self->{Input}->seek($self->Offset0(), Fcntl::SEEK_SET) || croak("Can't seek to setup.0 offset");
 	$self->{Input}->read(my $buffer, 64) || croak("Error reading setup ID");
-	my $TestID = unpack('Z64', $buffer);
-	$self->{Struct}->ReBlessWithVersionString($TestID);
+	$self->{TestID} = unpack('Z64', $buffer);
+	$self->{Filename} = $filename;
 	
 	return $self;
+}
+
+sub DiskSpanning {
+	return shift()->{OffsetTable}->{Offset1} == 0;
+}
+
+sub DiskInfo {
+	my ($self) = @_;
+	if ($self->{OffsetTable}->{Offset1} == 0) {
+		if (!defined($self->{DiskInfo})) {
+			$self->{DiskInfo} = $self->{Interpreter}->DiskInfo($self->{Filename}, $self->Setup0->{Header});
+		}
+		return $self->{DiskInfo};
+	}
+	return undef;
 }
 
 sub Offset0 {
@@ -69,7 +85,8 @@ sub TotalSize {
 }
 
 sub Version {
-	return shift()->{Struct}->Version();
+	my ($self) = @_;
+	return $self->{Interpreter}->StructReader($self->{TestID}, $self->{Input})->Version;
 }
 
 sub Setup0 {
@@ -77,24 +94,24 @@ sub Setup0 {
 	if (!$self->{Setup0}) {
 		$self->{Setup0} = { };
 		$self->{Input}->seek($self->Offset0() + 64, Fcntl::SEEK_SET);
-		my $reader = $self->{Struct}->FieldReader($self->{Input});
-		$self->{Setup0}->{Header} = $self->{Struct}->SetupHeader($reader);
-		$self->{Setup0}->{Languages} = $self->{Struct}->SetupLanguages($reader, $self->{Setup0}->{Header}->{NumLanguageEntries});
-		$self->{Setup0}->{CustomMessages} = $self->{Struct}->SetupCustomMessages($reader, $self->{Setup0}->{Header}->{NumCustomMessageEntries});
-		$self->{Setup0}->{Permissions} = $self->{Struct}->SetupPermissions($reader, $self->{Setup0}->{Header}->{NumPermissionEntries});
-		$self->{Setup0}->{Types} = $self->{Struct}->SetupTypes($reader, $self->{Setup0}->{Header}->{NumTypeEntries});
-		$self->{Setup0}->{Components} = $self->{Struct}->SetupComponents($reader, $self->{Setup0}->{Header}->{NumComponentEntries});
-		$self->{Setup0}->{Tasks} = $self->{Struct}->SetupTasks($reader, $self->{Setup0}->{Header}->{NumTaskEntries});
-		$self->{Setup0}->{Dirs} = $self->{Struct}->SetupDirs($reader, $self->{Setup0}->{Header}->{NumDirEntries});
-		$self->{Setup0}->{Files} = $self->{Struct}->SetupFiles($reader, $self->{Setup0}->{Header}->{NumFileEntries});
-		$self->{Setup0}->{Icons} = $self->{Struct}->SetupIcons($reader, $self->{Setup0}->{Header}->{NumIconEntries});
-		$self->{Setup0}->{IniEntries} = $self->{Struct}->SetupIniEntries($reader, $self->{Setup0}->{Header}->{NumIniEntries});
-		$self->{Setup0}->{RegistryEntries} = $self->{Struct}->SetupRegistryEntries($reader, $self->{Setup0}->{Header}->{NumRegistryEntries});
-		$self->{Setup0}->{InstallDelete} = $self->{Struct}->SetupDelete($reader, $self->{Setup0}->{Header}->{NumInstallDeleteEntries});
-		$self->{Setup0}->{UninstallDelete} = $self->{Struct}->SetupDelete($reader, $self->{Setup0}->{Header}->{NumUninstallDeleteEntries});
-		$self->{Setup0}->{Run} = $self->{Struct}->SetupRun($reader, $self->{Setup0}->{Header}->{NumRunEntries});
-		$self->{Setup0}->{UninstallRun} = $self->{Struct}->SetupRun($reader, $self->{Setup0}->{Header}->{NumUninstallRunEntries});
-		$self->{Setup0}->{Binaries} = $self->{Struct}->SetupBinaries($reader, $self->{Struct}->Compression1($self->{Setup0}->{Header}));
+		my $struct = $self->{Interpreter}->StructReader($self->{TestID}, $self->{Input});
+		$self->{Setup0}->{Header} = $self->{Interpreter}->SetupHeader($struct);
+		$self->{Setup0}->{Languages} = $self->{Interpreter}->SetupLanguages($struct, $self->{Setup0}->{Header}->{NumLanguageEntries});
+		$self->{Setup0}->{CustomMessages} = $self->{Interpreter}->SetupCustomMessages($struct, $self->{Setup0}->{Header}->{NumCustomMessageEntries});
+		$self->{Setup0}->{Permissions} = $self->{Interpreter}->SetupPermissions($struct, $self->{Setup0}->{Header}->{NumPermissionEntries});
+		$self->{Setup0}->{Types} = $self->{Interpreter}->SetupTypes($struct, $self->{Setup0}->{Header}->{NumTypeEntries});
+		$self->{Setup0}->{Components} = $self->{Interpreter}->SetupComponents($struct, $self->{Setup0}->{Header}->{NumComponentEntries});
+		$self->{Setup0}->{Tasks} = $self->{Interpreter}->SetupTasks($struct, $self->{Setup0}->{Header}->{NumTaskEntries});
+		$self->{Setup0}->{Dirs} = $self->{Interpreter}->SetupDirs($struct, $self->{Setup0}->{Header}->{NumDirEntries});
+		$self->{Setup0}->{Files} = $self->{Interpreter}->SetupFiles($struct, $self->{Setup0}->{Header}->{NumFileEntries});
+		$self->{Setup0}->{Icons} = $self->{Interpreter}->SetupIcons($struct, $self->{Setup0}->{Header}->{NumIconEntries});
+		$self->{Setup0}->{IniEntries} = $self->{Interpreter}->SetupIniEntries($struct, $self->{Setup0}->{Header}->{NumIniEntries});
+		$self->{Setup0}->{RegistryEntries} = $self->{Interpreter}->SetupRegistryEntries($struct, $self->{Setup0}->{Header}->{NumRegistryEntries});
+		$self->{Setup0}->{InstallDelete} = $self->{Interpreter}->SetupDelete($struct, $self->{Setup0}->{Header}->{NumInstallDeleteEntries});
+		$self->{Setup0}->{UninstallDelete} = $self->{Interpreter}->SetupDelete($struct, $self->{Setup0}->{Header}->{NumUninstallDeleteEntries});
+		$self->{Setup0}->{Run} = $self->{Interpreter}->SetupRun($struct, $self->{Setup0}->{Header}->{NumRunEntries});
+		$self->{Setup0}->{UninstallRun} = $self->{Interpreter}->SetupRun($struct, $self->{Setup0}->{Header}->{NumUninstallRunEntries});
+		$self->{Setup0}->{Binaries} = $self->{Interpreter}->SetupBinaries($struct, $self->{Interpreter}->Compression1($self->{Setup0}->{Header}));
 		# Get the current location so we can seek to the locations list later.
 		# It's stored in its own LZMA stream.
 		$self->{Setup0}->{OffsetLocations} = $self->{Input}->tell();
@@ -108,9 +125,9 @@ sub FileLocations {
 	if (!$self->{FileLocations}) {
 		my $setup0 = $self->Setup0();
 		$self->{Input}->seek($setup0->{OffsetLocations}, Fcntl::SEEK_SET);
-		my $reader = $self->{Struct}->FieldReader($self->{Input});
+		my $struct = $self->{Interpreter}->StructReader($self->{TestID}, $self->{Input});
 		#while (1) { $self->{Input}->seek(0x01000000, Fcntl::SEEK_SET); }
-		$self->{FileLocations} = $self->{Struct}->SetupFileLocations($reader, $setup0->{Header}->{NumFileLocationEntries});
+		$self->{FileLocations} = $self->{Interpreter}->SetupFileLocations($struct, $setup0->{Header}->{NumFileLocationEntries});
 	}
 	return $self->{FileLocations};
 }
@@ -193,8 +210,15 @@ sub ReadFile {
 	my $locations = $self->FileLocations();
 	my $file = $self->{Setup0}->{Files}->[$index];
 	my $location = $locations->[$file->{LocationEntry}];
-	$self->{Input}->seek($self->Offset1(), Fcntl::SEEK_SET);
-	return $self->{Struct}->ReadFile($self->{Input}, $setup0->{Header}, $location, $password);
+	if ($self->DiskSpanning()) {
+		#print Dumper($self->DiskInfo);
+		#print Dumper($location);
+		my $info = $self->DiskInfo->[$location->{FirstSlice}];
+		return $self->{Interpreter}->ReadFile($info->{Input}, $setup0->{Header}, $location, 0, $password);
+	} else {
+		#$self->{Input}->seek($self->Offset1(), Fcntl::SEEK_SET);
+		return $self->{Interpreter}->ReadFile($self->{Input}, $setup0->{Header}, $location, $self->Offset1(), $password);
+	}
 }
 
 1;

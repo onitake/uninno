@@ -1,473 +1,433 @@
 package Setup::Inno::Struct5500u;
 use strict;
-use base 'Setup::Inno::Struct5309';
-sub SetupHeader { my ($self, $reader) = @_; return $self->TSetupHeader($reader); }
-sub SetupLanguages { my ($self, $reader, $count) = @_; return [ map { $self->TSetupLanguageEntry($reader) } 0..$count-1 ]; }
-sub SetupCustomMessages { my ($self, $reader, $count) = @_; return [ map { $self->TSetupCustomMessageEntry($reader) } 0..$count-1 ]; }
-sub SetupPermissions { my ($self, $reader, $count) = @_; return [ map { $self->TSetupPermissionEntry($reader) } 0..$count-1 ]; }
-sub SetupTypes { my ($self, $reader, $count) = @_; return [ map { $self->TSetupTypeEntry($reader) } 0..$count-1 ]; }
-sub SetupComponents { my ($self, $reader, $count) = @_; return [ map { $self->TSetupComponentEntry($reader) } 0..$count-1 ]; }
-sub SetupTasks { my ($self, $reader, $count) = @_; return [ map { $self->TSetupTaskEntry($reader) } 0..$count-1 ]; }
-sub SetupDirs { my ($self, $reader, $count) = @_; return [ map { $self->TSetupDirEntry($reader) } 0..$count-1 ]; }
-sub SetupFiles { my ($self, $reader, $count) = @_; return [ map { $self->TSetupFileEntry($reader) } 0..$count-1 ]; }
-sub SetupIcons { my ($self, $reader, $count) = @_; return [ map { $self->TSetupIconEntry($reader) } 0..$count-1 ]; }
-sub SetupIniEntries { my ($self, $reader, $count) = @_; return [ map { $self->TSetupIniEntry($reader) } 0..$count-1 ]; }
-sub SetupRegistryEntries { my ($self, $reader, $count) = @_; return [ map { $self->TSetupRegistryEntry($reader) } 0..$count-1 ]; }
-sub SetupDelete { my ($self, $reader, $count) = @_; return [ map { $self->TSetupDeleteEntry($reader) } 0..$count-1 ]; }
-sub SetupRun { my ($self, $reader, $count) = @_; return [ map { $self->TSetupRunEntry($reader) } 0..$count-1 ]; }
-sub SetupFileLocations { my ($self, $reader, $count) = @_; return [ map { $self->TSetupFileLocationEntry($reader) } 0..$count-1 ]; }
-sub TFileTime {
-	my ($self, $reader) = @_;
-	my $tlow = $reader->ReadLongWord();
-	my $thigh = $reader->ReadLongWord();
-	my $hnsecs = $tlow | ($thigh << 32);
-	my $secs = int($hnsecs / 10000000);
-	my $nsecs = ($hnsecs - $secs * 10000000) * 100;
-	return DateTime->new(year => 1601, month => 1, day => 1, hour => 0, minute => 0, second => 0, nanosecond => 0)->add(seconds => $secs, nanoseconds => $nsecs);
-}
-sub HKEY {
-	my ($self, $reader) = @_;
-	return $reader->ReadLongWord();
-}
-sub DWORD {
-	my ($self, $reader) = @_;
-	return $reader->ReadLongWord();
-}
-sub TSHA1Digest {
-	my ($self, $reader) = @_;
-	return $reader->ReadByteArray(20);
-}
-sub TMD5Digest {
-	my ($self, $reader) = @_;
-	return $reader->ReadByteArray(16);
-}
+use base 'Setup::Inno::Struct';
 sub TSetupHeader {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		AppName => $reader->ReadString(2),
-		AppVerName => $reader->ReadString(2),
-		AppId => $reader->ReadString(2),
-		AppCopyright => $reader->ReadString(2),
-		AppPublisher => $reader->ReadString(2),
-		AppPublisherURL => $reader->ReadString(2),
-		AppSupportPhone => $reader->ReadString(2),
-		AppSupportURL => $reader->ReadString(2),
-		AppUpdatesURL => $reader->ReadString(2),
-		AppVersion => $reader->ReadString(2),
-		DefaultDirName => $reader->ReadString(2),
-		DefaultGroupName => $reader->ReadString(2),
-		BaseFilename => $reader->ReadString(2),
-		UninstallFilesDir => $reader->ReadString(2),
-		UninstallDisplayName => $reader->ReadString(2),
-		UninstallDisplayIcon => $reader->ReadString(2),
-		AppMutex => $reader->ReadString(2),
-		DefaultUserInfoName => $reader->ReadString(2),
-		DefaultUserInfoOrg => $reader->ReadString(2),
-		DefaultUserInfoSerial => $reader->ReadString(2),
-		AppReadmeFile => $reader->ReadString(2),
-		AppContact => $reader->ReadString(2),
-		AppComments => $reader->ReadString(2),
-		AppModifyPath => $reader->ReadString(2),
-		CreateUninstallRegKey => $reader->ReadString(2),
-		Uninstallable => $reader->ReadString(2),
-		CloseApplicationsFilter => $reader->ReadString(2),
-		LicenseText => $reader->ReadString(1),
-		InfoBeforeText => $reader->ReadString(1),
-		InfoAfterText => $reader->ReadString(1),
-		CompiledCodeText => $reader->ReadString(1),
-		NumLanguageEntries => $reader->ReadInteger(),
-		NumCustomMessageEntries => $reader->ReadInteger(),
-		NumPermissionEntries => $reader->ReadInteger(),
-		NumTypeEntries => $reader->ReadInteger(),
-		NumComponentEntries => $reader->ReadInteger(),
-		NumTaskEntries => $reader->ReadInteger(),
-		NumDirEntries => $reader->ReadInteger(),
-		NumFileEntries => $reader->ReadInteger(),
-		NumFileLocationEntries => $reader->ReadInteger(),
-		NumIconEntries => $reader->ReadInteger(),
-		NumIniEntries => $reader->ReadInteger(),
-		NumRegistryEntries => $reader->ReadInteger(),
-		NumInstallDeleteEntries => $reader->ReadInteger(),
-		NumUninstallDeleteEntries => $reader->ReadInteger(),
-		NumRunEntries => $reader->ReadInteger(),
-		NumUninstallRunEntries => $reader->ReadInteger(),
+		AppName => $self->ReadString(2),
+		AppVerName => $self->ReadString(2),
+		AppId => $self->ReadString(2),
+		AppCopyright => $self->ReadString(2),
+		AppPublisher => $self->ReadString(2),
+		AppPublisherURL => $self->ReadString(2),
+		AppSupportPhone => $self->ReadString(2),
+		AppSupportURL => $self->ReadString(2),
+		AppUpdatesURL => $self->ReadString(2),
+		AppVersion => $self->ReadString(2),
+		DefaultDirName => $self->ReadString(2),
+		DefaultGroupName => $self->ReadString(2),
+		BaseFilename => $self->ReadString(2),
+		UninstallFilesDir => $self->ReadString(2),
+		UninstallDisplayName => $self->ReadString(2),
+		UninstallDisplayIcon => $self->ReadString(2),
+		AppMutex => $self->ReadString(2),
+		DefaultUserInfoName => $self->ReadString(2),
+		DefaultUserInfoOrg => $self->ReadString(2),
+		DefaultUserInfoSerial => $self->ReadString(2),
+		AppReadmeFile => $self->ReadString(2),
+		AppContact => $self->ReadString(2),
+		AppComments => $self->ReadString(2),
+		AppModifyPath => $self->ReadString(2),
+		CreateUninstallRegKey => $self->ReadString(2),
+		Uninstallable => $self->ReadString(2),
+		CloseApplicationsFilter => $self->ReadString(2),
+		LicenseText => $self->ReadString(1),
+		InfoBeforeText => $self->ReadString(1),
+		InfoAfterText => $self->ReadString(1),
+		CompiledCodeText => $self->ReadString(1),
+		NumLanguageEntries => $self->ReadInteger(),
+		NumCustomMessageEntries => $self->ReadInteger(),
+		NumPermissionEntries => $self->ReadInteger(),
+		NumTypeEntries => $self->ReadInteger(),
+		NumComponentEntries => $self->ReadInteger(),
+		NumTaskEntries => $self->ReadInteger(),
+		NumDirEntries => $self->ReadInteger(),
+		NumFileEntries => $self->ReadInteger(),
+		NumFileLocationEntries => $self->ReadInteger(),
+		NumIconEntries => $self->ReadInteger(),
+		NumIniEntries => $self->ReadInteger(),
+		NumRegistryEntries => $self->ReadInteger(),
+		NumInstallDeleteEntries => $self->ReadInteger(),
+		NumUninstallDeleteEntries => $self->ReadInteger(),
+		NumRunEntries => $self->ReadInteger(),
+		NumUninstallRunEntries => $self->ReadInteger(),
 		MinVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
 		OnlyBelowVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
-		BackColor => $reader->ReadLongInt(),
-		BackColor2 => $reader->ReadLongInt(),
-		WizardImageBackColor => $reader->ReadLongInt(),
-		PasswordHash => $self->TSHA1Digest($reader),
-		PasswordSalt => [ map({ $reader->ReadByte() } (0..7)) ],
-		ExtraDiskSpaceRequired => $reader->ReadInt64(),
-		SlicesPerDisk => $reader->ReadInteger(),
-		UninstallLogMode => $reader->ReadEnum([ 'lmAppend', 'lmNew', 'lmOverwrite' ]),
-		DirExistsWarning => $reader->ReadEnum([ 'ddAuto', 'ddNo', 'ddYes' ]),
-		PrivilegesRequired => $reader->ReadEnum([ 'prNone', 'prPowerUser', 'prAdmin', 'prLowest' ]),
-		ShowLanguageDialog => $reader->ReadEnum([ 'slYes', 'slNo', 'slAuto' ]),
-		LanguageDetectionMethod => $reader->ReadEnum([ 'ldUILanguage', 'ldLocale', 'ldNone' ]),
-		CompressMethod => $reader->ReadEnum([ 'cmStored', 'cmZip', 'cmBzip', 'cmLZMA', 'cmLZMA2' ]),
-		ArchitecturesAllowed => $reader->ReadSet([ 'paUnknown', 'paX86', 'paX64', 'paIA64' ]),
-		ArchitecturesInstallIn64BitMode => $reader->ReadSet([ 'paUnknown', 'paX86', 'paX64', 'paIA64' ]),
-		DisableDirPage => $reader->ReadEnum([ 'dpAuto', 'dpNo', 'dpYes' ]),
-		DisableProgramGroupPage => $reader->ReadEnum([ 'dpAuto', 'dpNo', 'dpYes' ]),
-		UninstallDisplaySize => $reader->ReadInt64(),
-		Options => $reader->ReadSet([ 'shDisableStartupPrompt', 'shCreateAppDir', 'shAllowNoIcons', 'shAlwaysRestart', 'shAlwaysUsePersonalGroup', 'shWindowVisible', 'shWindowShowCaption', 'shWindowResizable', 'shWindowStartMaximized', 'shEnableDirDoesntExistWarning', 'shPassword', 'shAllowRootDirectory', 'shDisableFinishedPage', 'shChangesAssociations', 'shUsePreviousAppDir', 'shBackColorHorizontal', 'shUsePreviousGroup', 'shUpdateUninstallLogAppName', 'shUsePreviousSetupType', 'shDisableReadyMemo', 'shAlwaysShowComponentsList', 'shFlatComponentsList', 'shShowComponentSizes', 'shUsePreviousTasks', 'shDisableReadyPage', 'shAlwaysShowDirOnReadyPage', 'shAlwaysShowGroupOnReadyPage', 'shAllowUNCPath', 'shUserInfoPage', 'shUsePreviousUserInfo', 'shUninstallRestartComputer', 'shRestartIfNeededByRun', 'shShowTasksTreeLines', 'shAllowCancelDuringInstall', 'shWizardImageStretch', 'shAppendDefaultDirName', 'shAppendDefaultGroupName', 'shEncryptionUsed', 'shChangesEnvironment', 'shSetupLogging', 'shSignedUninstaller', 'shUsePreviousLanguage', 'shDisableWelcomePage', 'shCloseApplications', 'shRestartApplications', 'shAllowNetworkDrive' ]),
+		BackColor => $self->ReadLongInt(),
+		BackColor2 => $self->ReadLongInt(),
+		WizardImageBackColor => $self->ReadLongInt(),
+		PasswordHash => $self->TSHA1Digest(),
+		PasswordSalt => [ map({ $self->ReadByte() } (0..7)) ],
+		ExtraDiskSpaceRequired => $self->ReadInt64(),
+		SlicesPerDisk => $self->ReadInteger(),
+		UninstallLogMode => $self->ReadEnum([ 'lmAppend', 'lmNew', 'lmOverwrite' ]),
+		DirExistsWarning => $self->ReadEnum([ 'ddAuto', 'ddNo', 'ddYes' ]),
+		PrivilegesRequired => $self->ReadEnum([ 'prNone', 'prPowerUser', 'prAdmin', 'prLowest' ]),
+		ShowLanguageDialog => $self->ReadEnum([ 'slYes', 'slNo', 'slAuto' ]),
+		LanguageDetectionMethod => $self->ReadEnum([ 'ldUILanguage', 'ldLocale', 'ldNone' ]),
+		CompressMethod => $self->ReadEnum([ 'cmStored', 'cmZip', 'cmBzip', 'cmLZMA', 'cmLZMA2' ]),
+		ArchitecturesAllowed => $self->ReadSet([ 'paUnknown', 'paX86', 'paX64', 'paIA64' ]),
+		ArchitecturesInstallIn64BitMode => $self->ReadSet([ 'paUnknown', 'paX86', 'paX64', 'paIA64' ]),
+		DisableDirPage => $self->ReadEnum([ 'dpAuto', 'dpNo', 'dpYes' ]),
+		DisableProgramGroupPage => $self->ReadEnum([ 'dpAuto', 'dpNo', 'dpYes' ]),
+		UninstallDisplaySize => $self->ReadInt64(),
+		Options => $self->ReadSet([ 'shDisableStartupPrompt', 'shCreateAppDir', 'shAllowNoIcons', 'shAlwaysRestart', 'shAlwaysUsePersonalGroup', 'shWindowVisible', 'shWindowShowCaption', 'shWindowResizable', 'shWindowStartMaximized', 'shEnableDirDoesntExistWarning', 'shPassword', 'shAllowRootDirectory', 'shDisableFinishedPage', 'shChangesAssociations', 'shUsePreviousAppDir', 'shBackColorHorizontal', 'shUsePreviousGroup', 'shUpdateUninstallLogAppName', 'shUsePreviousSetupType', 'shDisableReadyMemo', 'shAlwaysShowComponentsList', 'shFlatComponentsList', 'shShowComponentSizes', 'shUsePreviousTasks', 'shDisableReadyPage', 'shAlwaysShowDirOnReadyPage', 'shAlwaysShowGroupOnReadyPage', 'shAllowUNCPath', 'shUserInfoPage', 'shUsePreviousUserInfo', 'shUninstallRestartComputer', 'shRestartIfNeededByRun', 'shShowTasksTreeLines', 'shAllowCancelDuringInstall', 'shWizardImageStretch', 'shAppendDefaultDirName', 'shAppendDefaultGroupName', 'shEncryptionUsed', 'shChangesEnvironment', 'shSetupLogging', 'shSignedUninstaller', 'shUsePreviousLanguage', 'shDisableWelcomePage', 'shCloseApplications', 'shRestartApplications', 'shAllowNetworkDrive' ]),
 	};
 	return $ret;
 }
 sub TSetupLanguageEntry {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		Name => $reader->ReadString(2),
-		LanguageName => $reader->ReadString(2),
-		DialogFontName => $reader->ReadString(2),
-		TitleFontName => $reader->ReadString(2),
-		WelcomeFontName => $reader->ReadString(2),
-		CopyrightFontName => $reader->ReadString(2),
-		Data => $reader->ReadString(1),
-		LicenseText => $reader->ReadString(1),
-		InfoBeforeText => $reader->ReadString(1),
-		InfoAfterText => $reader->ReadString(1),
-		LanguageID => $reader->ReadCardinal(),
-		DialogFontSize => $reader->ReadInteger(),
-		TitleFontSize => $reader->ReadInteger(),
-		WelcomeFontSize => $reader->ReadInteger(),
-		CopyrightFontSize => $reader->ReadInteger(),
-		RightToLeft => $reader->ReadByte(),
+		Name => $self->ReadString(2),
+		LanguageName => $self->ReadString(2),
+		DialogFontName => $self->ReadString(2),
+		TitleFontName => $self->ReadString(2),
+		WelcomeFontName => $self->ReadString(2),
+		CopyrightFontName => $self->ReadString(2),
+		Data => $self->ReadString(1),
+		LicenseText => $self->ReadString(1),
+		InfoBeforeText => $self->ReadString(1),
+		InfoAfterText => $self->ReadString(1),
+		LanguageID => $self->ReadCardinal(),
+		DialogFontSize => $self->ReadInteger(),
+		TitleFontSize => $self->ReadInteger(),
+		WelcomeFontSize => $self->ReadInteger(),
+		CopyrightFontSize => $self->ReadInteger(),
+		RightToLeft => $self->ReadByte(),
 	};
 	return $ret;
 }
 sub TSetupCustomMessageEntry {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		Name => $reader->ReadString(2),
-		Value => $reader->ReadString(2),
-		LangIndex => $reader->ReadInteger(),
+		Name => $self->ReadString(2),
+		Value => $self->ReadString(2),
+		LangIndex => $self->ReadInteger(),
 	};
 	return $ret;
 }
 sub TSetupPermissionEntry {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		Permissions => $reader->ReadString(1),
+		Permissions => $self->ReadString(1),
 	};
 	return $ret;
 }
 sub TSetupTypeEntry {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		Name => $reader->ReadString(2),
-		Description => $reader->ReadString(2),
-		Languages => $reader->ReadString(2),
-		Check => $reader->ReadString(2),
+		Name => $self->ReadString(2),
+		Description => $self->ReadString(2),
+		Languages => $self->ReadString(2),
+		Check => $self->ReadString(2),
 		MinVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
 		OnlyBelowVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
-		Options => $reader->ReadSet([ 'toIsCustom' ]),
-		Typ => $reader->ReadEnum([ 'ttUser', 'ttDefaultFull', 'ttDefaultCompact', 'ttDefaultCustom' ]),
-		Size => $reader->ReadInt64(),
+		Options => $self->ReadSet([ 'toIsCustom' ]),
+		Typ => $self->ReadEnum([ 'ttUser', 'ttDefaultFull', 'ttDefaultCompact', 'ttDefaultCustom' ]),
+		Size => $self->ReadInt64(),
 	};
 	return $ret;
 }
 sub TSetupComponentEntry {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		Name => $reader->ReadString(2),
-		Description => $reader->ReadString(2),
-		Types => $reader->ReadString(2),
-		Languages => $reader->ReadString(2),
-		Check => $reader->ReadString(2),
-		ExtraDiskSpaceRequired => $reader->ReadInt64(),
-		Level => $reader->ReadInteger(),
-		Used => $reader->ReadByte(),
+		Name => $self->ReadString(2),
+		Description => $self->ReadString(2),
+		Types => $self->ReadString(2),
+		Languages => $self->ReadString(2),
+		Check => $self->ReadString(2),
+		ExtraDiskSpaceRequired => $self->ReadInt64(),
+		Level => $self->ReadInteger(),
+		Used => $self->ReadByte(),
 		MinVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
 		OnlyBelowVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
-		Options => $reader->ReadSet([ 'coFixed', 'coRestart', 'coDisableNoUninstallWarning', 'coExclusive', 'coDontInheritCheck' ]),
-		Size => $reader->ReadInt64(),
+		Options => $self->ReadSet([ 'coFixed', 'coRestart', 'coDisableNoUninstallWarning', 'coExclusive', 'coDontInheritCheck' ]),
+		Size => $self->ReadInt64(),
 	};
 	return $ret;
 }
 sub TSetupTaskEntry {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		Name => $reader->ReadString(2),
-		Description => $reader->ReadString(2),
-		GroupDescription => $reader->ReadString(2),
-		Components => $reader->ReadString(2),
-		Languages => $reader->ReadString(2),
-		Check => $reader->ReadString(2),
-		Level => $reader->ReadInteger(),
-		Used => $reader->ReadByte(),
+		Name => $self->ReadString(2),
+		Description => $self->ReadString(2),
+		GroupDescription => $self->ReadString(2),
+		Components => $self->ReadString(2),
+		Languages => $self->ReadString(2),
+		Check => $self->ReadString(2),
+		Level => $self->ReadInteger(),
+		Used => $self->ReadByte(),
 		MinVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
 		OnlyBelowVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
-		Options => $reader->ReadSet([ 'toExclusive', 'toUnchecked', 'toRestart', 'toCheckedOnce', 'toDontInheritCheck' ]),
+		Options => $self->ReadSet([ 'toExclusive', 'toUnchecked', 'toRestart', 'toCheckedOnce', 'toDontInheritCheck' ]),
 	};
 	return $ret;
 }
 sub TSetupDirEntry {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		DirName => $reader->ReadString(2),
-		Components => $reader->ReadString(2),
-		Tasks => $reader->ReadString(2),
-		Languages => $reader->ReadString(2),
-		Check => $reader->ReadString(2),
-		AfterInstall => $reader->ReadString(2),
-		BeforeInstall => $reader->ReadString(2),
-		Attribs => $reader->ReadInteger(),
+		DirName => $self->ReadString(2),
+		Components => $self->ReadString(2),
+		Tasks => $self->ReadString(2),
+		Languages => $self->ReadString(2),
+		Check => $self->ReadString(2),
+		AfterInstall => $self->ReadString(2),
+		BeforeInstall => $self->ReadString(2),
+		Attribs => $self->ReadInteger(),
 		MinVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
 		OnlyBelowVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
-		PermissionsEntry => $reader->ReadSmallInt(),
-		Options => $reader->ReadSet([ 'doUninsNeverUninstall', 'doDeleteAfterInstall', 'doUninsAlwaysUninstall', 'doSetNTFSCompression', 'doUnsetNTFSCompression' ]),
+		PermissionsEntry => $self->ReadSmallInt(),
+		Options => $self->ReadSet([ 'doUninsNeverUninstall', 'doDeleteAfterInstall', 'doUninsAlwaysUninstall', 'doSetNTFSCompression', 'doUnsetNTFSCompression' ]),
 	};
 	return $ret;
 }
 sub TSetupFileEntry {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		SourceFilename => $reader->ReadString(2),
-		DestName => $reader->ReadString(2),
-		InstallFontName => $reader->ReadString(2),
-		StrongAssemblyName => $reader->ReadString(2),
-		Components => $reader->ReadString(2),
-		Tasks => $reader->ReadString(2),
-		Languages => $reader->ReadString(2),
-		Check => $reader->ReadString(2),
-		AfterInstall => $reader->ReadString(2),
-		BeforeInstall => $reader->ReadString(2),
+		SourceFilename => $self->ReadString(2),
+		DestName => $self->ReadString(2),
+		InstallFontName => $self->ReadString(2),
+		StrongAssemblyName => $self->ReadString(2),
+		Components => $self->ReadString(2),
+		Tasks => $self->ReadString(2),
+		Languages => $self->ReadString(2),
+		Check => $self->ReadString(2),
+		AfterInstall => $self->ReadString(2),
+		BeforeInstall => $self->ReadString(2),
 		MinVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
 		OnlyBelowVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
-		LocationEntry => $reader->ReadInteger(),
-		Attribs => $reader->ReadInteger(),
-		ExternalSize => $reader->ReadInt64(),
-		PermissionsEntry => $reader->ReadSmallInt(),
-		Options => $reader->ReadSet([ 'foConfirmOverwrite', 'foUninsNeverUninstall', 'foRestartReplace', 'foDeleteAfterInstall', 'foRegisterServer', 'foRegisterTypeLib', 'foSharedFile', 'foCompareTimeStamp', 'foFontIsntTrueType', 'foSkipIfSourceDoesntExist', 'foOverwriteReadOnly', 'foOverwriteSameVersion', 'foCustomDestName', 'foOnlyIfDestFileExists', 'foNoRegError', 'foUninsRestartDelete', 'foOnlyIfDoesntExist', 'foIgnoreVersion', 'foPromptIfOlder', 'foDontCopy', 'foUninsRemoveReadOnly', 'foRecurseSubDirsExternal', 'foReplaceSameVersionIfContentsDiffer', 'foDontVerifyChecksum', 'foUninsNoSharedFilePrompt', 'foCreateAllSubDirs', 'fo32Bit', 'fo64Bit', 'foExternalSizePreset', 'foSetNTFSCompression', 'foUnsetNTFSCompression', 'foGacInstall' ]),
-		FileType => $reader->ReadEnum([ 'ftUserFile', 'ftUninstExe' ]),
+		LocationEntry => $self->ReadInteger(),
+		Attribs => $self->ReadInteger(),
+		ExternalSize => $self->ReadInt64(),
+		PermissionsEntry => $self->ReadSmallInt(),
+		Options => $self->ReadSet([ 'foConfirmOverwrite', 'foUninsNeverUninstall', 'foRestartReplace', 'foDeleteAfterInstall', 'foRegisterServer', 'foRegisterTypeLib', 'foSharedFile', 'foCompareTimeStamp', 'foFontIsntTrueType', 'foSkipIfSourceDoesntExist', 'foOverwriteReadOnly', 'foOverwriteSameVersion', 'foCustomDestName', 'foOnlyIfDestFileExists', 'foNoRegError', 'foUninsRestartDelete', 'foOnlyIfDoesntExist', 'foIgnoreVersion', 'foPromptIfOlder', 'foDontCopy', 'foUninsRemoveReadOnly', 'foRecurseSubDirsExternal', 'foReplaceSameVersionIfContentsDiffer', 'foDontVerifyChecksum', 'foUninsNoSharedFilePrompt', 'foCreateAllSubDirs', 'fo32Bit', 'fo64Bit', 'foExternalSizePreset', 'foSetNTFSCompression', 'foUnsetNTFSCompression', 'foGacInstall' ]),
+		FileType => $self->ReadEnum([ 'ftUserFile', 'ftUninstExe' ]),
 	};
 	return $ret;
 }
 sub TSetupIconEntry {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		IconName => $reader->ReadString(2),
-		Filename => $reader->ReadString(2),
-		Parameters => $reader->ReadString(2),
-		WorkingDir => $reader->ReadString(2),
-		IconFilename => $reader->ReadString(2),
-		Comment => $reader->ReadString(2),
-		Components => $reader->ReadString(2),
-		Tasks => $reader->ReadString(2),
-		Languages => $reader->ReadString(2),
-		Check => $reader->ReadString(2),
-		AfterInstall => $reader->ReadString(2),
-		BeforeInstall => $reader->ReadString(2),
-		AppUserModelID => $reader->ReadString(2),
+		IconName => $self->ReadString(2),
+		Filename => $self->ReadString(2),
+		Parameters => $self->ReadString(2),
+		WorkingDir => $self->ReadString(2),
+		IconFilename => $self->ReadString(2),
+		Comment => $self->ReadString(2),
+		Components => $self->ReadString(2),
+		Tasks => $self->ReadString(2),
+		Languages => $self->ReadString(2),
+		Check => $self->ReadString(2),
+		AfterInstall => $self->ReadString(2),
+		BeforeInstall => $self->ReadString(2),
+		AppUserModelID => $self->ReadString(2),
 		MinVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
 		OnlyBelowVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
-		IconIndex => $reader->ReadInteger(),
-		ShowCmd => $reader->ReadInteger(),
-		CloseOnExit => $reader->ReadEnum([ 'icNoSetting', 'icYes', 'icNo' ]),
-		HotKey => $reader->ReadWord(),
-		Options => $reader->ReadSet([ 'ioUninsNeverUninstall', 'ioCreateOnlyIfFileExists', 'ioUseAppPaths', 'ioFolderShortcut', 'ioExcludeFromShowInNewInstall', 'ioPreventPinning' ]),
+		IconIndex => $self->ReadInteger(),
+		ShowCmd => $self->ReadInteger(),
+		CloseOnExit => $self->ReadEnum([ 'icNoSetting', 'icYes', 'icNo' ]),
+		HotKey => $self->ReadWord(),
+		Options => $self->ReadSet([ 'ioUninsNeverUninstall', 'ioCreateOnlyIfFileExists', 'ioUseAppPaths', 'ioFolderShortcut', 'ioExcludeFromShowInNewInstall', 'ioPreventPinning' ]),
 	};
 	return $ret;
 }
 sub TSetupIniEntry {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		Filename => $reader->ReadString(2),
-		Section => $reader->ReadString(2),
-		Entry => $reader->ReadString(2),
-		Value => $reader->ReadString(2),
-		Components => $reader->ReadString(2),
-		Tasks => $reader->ReadString(2),
-		Languages => $reader->ReadString(2),
-		Check => $reader->ReadString(2),
-		AfterInstall => $reader->ReadString(2),
-		BeforeInstall => $reader->ReadString(2),
+		Filename => $self->ReadString(2),
+		Section => $self->ReadString(2),
+		Entry => $self->ReadString(2),
+		Value => $self->ReadString(2),
+		Components => $self->ReadString(2),
+		Tasks => $self->ReadString(2),
+		Languages => $self->ReadString(2),
+		Check => $self->ReadString(2),
+		AfterInstall => $self->ReadString(2),
+		BeforeInstall => $self->ReadString(2),
 		MinVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
 		OnlyBelowVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
-		Options => $reader->ReadSet([ 'ioCreateKeyIfDoesntExist', 'ioUninsDeleteEntry', 'ioUninsDeleteEntireSection', 'ioUninsDeleteSectionIfEmpty', 'ioHasValue' ]),
+		Options => $self->ReadSet([ 'ioCreateKeyIfDoesntExist', 'ioUninsDeleteEntry', 'ioUninsDeleteEntireSection', 'ioUninsDeleteSectionIfEmpty', 'ioHasValue' ]),
 	};
 	return $ret;
 }
 sub TSetupRegistryEntry {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		Subkey => $reader->ReadString(2),
-		ValueName => $reader->ReadString(2),
-		ValueData => $reader->ReadString(2),
-		Components => $reader->ReadString(2),
-		Tasks => $reader->ReadString(2),
-		Languages => $reader->ReadString(2),
-		Check => $reader->ReadString(2),
-		AfterInstall => $reader->ReadString(2),
-		BeforeInstall => $reader->ReadString(2),
+		Subkey => $self->ReadString(2),
+		ValueName => $self->ReadString(2),
+		ValueData => $self->ReadString(2),
+		Components => $self->ReadString(2),
+		Tasks => $self->ReadString(2),
+		Languages => $self->ReadString(2),
+		Check => $self->ReadString(2),
+		AfterInstall => $self->ReadString(2),
+		BeforeInstall => $self->ReadString(2),
 		MinVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
 		OnlyBelowVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
-		RootKey => $self->HKEY($reader),
-		PermissionsEntry => $reader->ReadSmallInt(),
-		Typ => $reader->ReadEnum([ 'rtNone', 'rtString', 'rtExpandString', 'rtDWord', 'rtBinary', 'rtMultiString', 'rtQWord' ]),
-		Options => $reader->ReadSet([ 'roCreateValueIfDoesntExist', 'roUninsDeleteValue', 'roUninsClearValue', 'roUninsDeleteEntireKey', 'roUninsDeleteEntireKeyIfEmpty', 'roPreserveStringType', 'roDeleteKey', 'roDeleteValue', 'roNoError', 'roDontCreateKey', 'ro32Bit', 'ro64Bit' ]),
+		RootKey => $self->HKEY(),
+		PermissionsEntry => $self->ReadSmallInt(),
+		Typ => $self->ReadEnum([ 'rtNone', 'rtString', 'rtExpandString', 'rtDWord', 'rtBinary', 'rtMultiString', 'rtQWord' ]),
+		Options => $self->ReadSet([ 'roCreateValueIfDoesntExist', 'roUninsDeleteValue', 'roUninsClearValue', 'roUninsDeleteEntireKey', 'roUninsDeleteEntireKeyIfEmpty', 'roPreserveStringType', 'roDeleteKey', 'roDeleteValue', 'roNoError', 'roDontCreateKey', 'ro32Bit', 'ro64Bit' ]),
 	};
 	return $ret;
 }
 sub TSetupDeleteEntry {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		Name => $reader->ReadString(2),
-		Components => $reader->ReadString(2),
-		Tasks => $reader->ReadString(2),
-		Languages => $reader->ReadString(2),
-		Check => $reader->ReadString(2),
-		AfterInstall => $reader->ReadString(2),
-		BeforeInstall => $reader->ReadString(2),
+		Name => $self->ReadString(2),
+		Components => $self->ReadString(2),
+		Tasks => $self->ReadString(2),
+		Languages => $self->ReadString(2),
+		Check => $self->ReadString(2),
+		AfterInstall => $self->ReadString(2),
+		BeforeInstall => $self->ReadString(2),
 		MinVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
 		OnlyBelowVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
-		DeleteType => $reader->ReadEnum([ 'dfFiles', 'dfFilesAndOrSubdirs', 'dfDirIfEmpty' ]),
+		DeleteType => $self->ReadEnum([ 'dfFiles', 'dfFilesAndOrSubdirs', 'dfDirIfEmpty' ]),
 	};
 	return $ret;
 }
 sub TSetupRunEntry {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		Name => $reader->ReadString(2),
-		Parameters => $reader->ReadString(2),
-		WorkingDir => $reader->ReadString(2),
-		RunOnceId => $reader->ReadString(2),
-		StatusMsg => $reader->ReadString(2),
-		Verb => $reader->ReadString(2),
-		Description => $reader->ReadString(2),
-		Components => $reader->ReadString(2),
-		Tasks => $reader->ReadString(2),
-		Languages => $reader->ReadString(2),
-		Check => $reader->ReadString(2),
-		AfterInstall => $reader->ReadString(2),
-		BeforeInstall => $reader->ReadString(2),
+		Name => $self->ReadString(2),
+		Parameters => $self->ReadString(2),
+		WorkingDir => $self->ReadString(2),
+		RunOnceId => $self->ReadString(2),
+		StatusMsg => $self->ReadString(2),
+		Verb => $self->ReadString(2),
+		Description => $self->ReadString(2),
+		Components => $self->ReadString(2),
+		Tasks => $self->ReadString(2),
+		Languages => $self->ReadString(2),
+		Check => $self->ReadString(2),
+		AfterInstall => $self->ReadString(2),
+		BeforeInstall => $self->ReadString(2),
 		MinVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
 		OnlyBelowVersion => {
-			WinVersion => $reader->ReadCardinal(),
-			NTVersion => $reader->ReadCardinal(),
-			NTServicePack => $reader->ReadWord(),
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
 		},
-		ShowCmd => $reader->ReadInteger(),
-		Wait => $reader->ReadEnum([ 'rwWaitUntilTerminated', 'rwNoWait', 'rwWaitUntilIdle' ]),
-		Options => $reader->ReadSet([ 'roShellExec', 'roSkipIfDoesntExist', 'roPostInstall', 'roUnchecked', 'roSkipIfSilent', 'roSkipIfNotSilent', 'roHideWizard', 'roRun32Bit', 'roRun64Bit', 'roRunAsOriginalUser' ]),
+		ShowCmd => $self->ReadInteger(),
+		Wait => $self->ReadEnum([ 'rwWaitUntilTerminated', 'rwNoWait', 'rwWaitUntilIdle' ]),
+		Options => $self->ReadSet([ 'roShellExec', 'roSkipIfDoesntExist', 'roPostInstall', 'roUnchecked', 'roSkipIfSilent', 'roSkipIfNotSilent', 'roHideWizard', 'roRun32Bit', 'roRun64Bit', 'roRunAsOriginalUser' ]),
 	};
 	return $ret;
 }
 sub TSetupFileLocationEntry {
-	my ($self, $reader) = @_;
+	my ($self) = @_;
 	my $ret;
 	$ret = {
-		FirstSlice => $reader->ReadInteger(),
-		LastSlice => $reader->ReadInteger(),
-		StartOffset => $reader->ReadLongInt(),
-		ChunkSuboffset => $reader->ReadInt64(),
-		OriginalSize => $reader->ReadInt64(),
-		ChunkCompressedSize => $reader->ReadInt64(),
-		SHA1Sum => $self->TSHA1Digest($reader),
-		TimeStamp => $self->TFileTime($reader),
-		FileVersionMS => $self->DWORD($reader),
-		FileVersionLS => $self->DWORD($reader),
-		Flags => $reader->ReadSet([ 'foVersionInfoValid', 'foVersionInfoNotValid', 'foTimeStampInUTC', 'foIsUninstExe', 'foCallInstructionOptimized', 'foTouch', 'foChunkEncrypted', 'foChunkCompressed', 'foSolidBreak' ]),
+		FirstSlice => $self->ReadInteger(),
+		LastSlice => $self->ReadInteger(),
+		StartOffset => $self->ReadLongInt(),
+		ChunkSuboffset => $self->ReadInt64(),
+		OriginalSize => $self->ReadInt64(),
+		ChunkCompressedSize => $self->ReadInt64(),
+		SHA1Sum => $self->TSHA1Digest(),
+		TimeStamp => $self->TFileTime(),
+		FileVersionMS => $self->DWORD(),
+		FileVersionLS => $self->DWORD(),
+		Flags => $self->ReadSet([ 'foVersionInfoValid', 'foVersionInfoNotValid', 'foTimeStampInUTC', 'foIsUninstExe', 'foCallInstructionOptimized', 'foTouch', 'foChunkEncrypted', 'foChunkCompressed', 'foSolidBreak' ]),
 	};
 	return $ret;
 }

@@ -1,124 +1,437 @@
-#!/usr/bin/perl
-
 package Setup::Inno::Struct5309;
-
 use strict;
-use base qw(Setup::Inno::Struct5203);
-use Digest;
-
-sub CheckFile {
-	my ($self, $data, $location) = @_;
-	my $digest = Digest->new('SHA-1');
-	$digest->add($data);
-	if (defined($location->{SHA1Sum})) {
-		#my $sum = $digest->digest();
-		#warn("sha1(data)=" . unpack('H*', $sum) . " sha1sum=" . unpack('H*',  $location->{SHA1Sum})) if $sum ne $location->{SHA1Sum};
-		#return $sum eq $location->{SHA1Sum};
-		#return 1;
-		return $digest->digest() eq $location->{SHA1Sum};
-	} else {
-		return $digest->digest() eq $location->{Checksum};
-	}
+use base 'Setup::Inno::Struct';
+sub TSetupHeader {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		AppName => $self->ReadString(1),
+		AppVerName => $self->ReadString(1),
+		AppId => $self->ReadString(1),
+		AppCopyright => $self->ReadString(1),
+		AppPublisher => $self->ReadString(1),
+		AppPublisherURL => $self->ReadString(1),
+		AppSupportPhone => $self->ReadString(1),
+		AppSupportURL => $self->ReadString(1),
+		AppUpdatesURL => $self->ReadString(1),
+		AppVersion => $self->ReadString(1),
+		DefaultDirName => $self->ReadString(1),
+		DefaultGroupName => $self->ReadString(1),
+		BaseFilename => $self->ReadString(1),
+		UninstallFilesDir => $self->ReadString(1),
+		UninstallDisplayName => $self->ReadString(1),
+		UninstallDisplayIcon => $self->ReadString(1),
+		AppMutex => $self->ReadString(1),
+		DefaultUserInfoName => $self->ReadString(1),
+		DefaultUserInfoOrg => $self->ReadString(1),
+		DefaultUserInfoSerial => $self->ReadString(1),
+		AppReadmeFile => $self->ReadString(1),
+		AppContact => $self->ReadString(1),
+		AppComments => $self->ReadString(1),
+		AppModifyPath => $self->ReadString(1),
+		CreateUninstallRegKey => $self->ReadString(1),
+		LicenseText => $self->ReadString(1),
+		InfoBeforeText => $self->ReadString(1),
+		InfoAfterText => $self->ReadString(1),
+		SignedUninstallerSignature => $self->ReadString(1),
+		CompiledCodeText => $self->ReadString(1),
+		LeadBytes => $self->ReadSet(256),
+		NumLanguageEntries => $self->ReadInteger(),
+		NumCustomMessageEntries => $self->ReadInteger(),
+		NumPermissionEntries => $self->ReadInteger(),
+		NumTypeEntries => $self->ReadInteger(),
+		NumComponentEntries => $self->ReadInteger(),
+		NumTaskEntries => $self->ReadInteger(),
+		NumDirEntries => $self->ReadInteger(),
+		NumFileEntries => $self->ReadInteger(),
+		NumFileLocationEntries => $self->ReadInteger(),
+		NumIconEntries => $self->ReadInteger(),
+		NumIniEntries => $self->ReadInteger(),
+		NumRegistryEntries => $self->ReadInteger(),
+		NumInstallDeleteEntries => $self->ReadInteger(),
+		NumUninstallDeleteEntries => $self->ReadInteger(),
+		NumRunEntries => $self->ReadInteger(),
+		NumUninstallRunEntries => $self->ReadInteger(),
+		MinVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		OnlyBelowVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		BackColor => $self->ReadLongInt(),
+		BackColor2 => $self->ReadLongInt(),
+		WizardImageBackColor => $self->ReadLongInt(),
+		PasswordHash => $self->TSHA1Digest(),
+		PasswordSalt => [ map({ $self->ReadByte() } (0..7)) ],
+		ExtraDiskSpaceRequired => $self->ReadInt64(),
+		SlicesPerDisk => $self->ReadInteger(),
+		UninstallLogMode => $self->ReadEnum([ 'lmAppend', 'lmNew', 'lmOverwrite' ]),
+		DirExistsWarning => $self->ReadEnum([ 'ddAuto', 'ddNo', 'ddYes' ]),
+		PrivilegesRequired => $self->ReadEnum([ 'prNone', 'prPowerUser', 'prAdmin', 'prLowest' ]),
+		ShowLanguageDialog => $self->ReadEnum([ 'slYes', 'slNo', 'slAuto' ]),
+		LanguageDetectionMethod => $self->ReadEnum([ 'ldUILanguage', 'ldLocale', 'ldNone' ]),
+		CompressMethod => $self->ReadEnum([ 'cmStored', 'cmZip', 'cmBzip', 'cmLZMA', 'cmLZMA2' ]),
+		ArchitecturesAllowed => $self->ReadSet([ 'paUnknown', 'paX86', 'paX64', 'paIA64' ]),
+		ArchitecturesInstallIn64BitMode => $self->ReadSet([ 'paUnknown', 'paX86', 'paX64', 'paIA64' ]),
+		SignedUninstallerOrigSize => $self->LongWord(),
+		SignedUninstallerHdrChecksum => $self->DWORD(),
+		DisableDirPage => $self->ReadEnum([ 'dpAuto', 'dpNo', 'dpYes' ]),
+		DisableProgramGroupPage => $self->ReadEnum([ 'dpAuto', 'dpNo', 'dpYes' ]),
+		UninstallDisplaySize => $self->ReadCardinal(),
+		Options => $self->ReadSet([ 'shDisableStartupPrompt', 'shUninstallable', 'shCreateAppDir', 'shAllowNoIcons', 'shAlwaysRestart', 'shAlwaysUsePersonalGroup', 'shWindowVisible', 'shWindowShowCaption', 'shWindowResizable', 'shWindowStartMaximized', 'shEnableDirDoesntExistWarning', 'shPassword', 'shAllowRootDirectory', 'shDisableFinishedPage', 'shChangesAssociations', 'shUsePreviousAppDir', 'shBackColorHorizontal', 'shUsePreviousGroup', 'shUpdateUninstallLogAppName', 'shUsePreviousSetupType', 'shDisableReadyMemo', 'shAlwaysShowComponentsList', 'shFlatComponentsList', 'shShowComponentSizes', 'shUsePreviousTasks', 'shDisableReadyPage', 'shAlwaysShowDirOnReadyPage', 'shAlwaysShowGroupOnReadyPage', 'shAllowUNCPath', 'shUserInfoPage', 'shUsePreviousUserInfo', 'shUninstallRestartComputer', 'shRestartIfNeededByRun', 'shShowTasksTreeLines', 'shAllowCancelDuringInstall', 'shWizardImageStretch', 'shAppendDefaultDirName', 'shAppendDefaultGroupName', 'shEncryptionUsed', 'shChangesEnvironment', 'shShowUndisplayableLanguages', 'shSetupLogging', 'shSignedUninstaller', 'shUsePreviousLanguage', 'shDisableWelcomePage' ]),
+	};
+	return $ret;
 }
-
-=comment
-procedure TransformCallInstructions5309(var Buf; Size: Integer;
-  const Encode: Boolean; const AddrOffset: LongWord);
-{ [Version 3] Converts relative addresses in x86/x64 CALL and JMP instructions
-  to absolute addresses if Encode is True, or the inverse if Encode is False. }
-type
-  PByteArray = ^TByteArray;
-  TByteArray = array[0..$7FFFFFFE] of Byte;
-var
-  P: PByteArray;
-  I: Integer;
-  Addr, Rel: LongWord;
-begin
-  if Size < 5 then
-    Exit;
-  Dec(Size, 4);
-  P := @Buf;
-  I := 0;
-  while I < Size do begin
-    { Does it appear to be a CALL or JMP instruction with a relative 32-bit
-      address? }
-    if (P[I] = $E8) or (P[I] = $E9) then begin
-      Inc(I);
-      { Verify that the high byte of the address is $00 or $FF. If it isn't,
-        then what we've encountered most likely isn't a CALL or JMP. }
-      if (P[I+3] = $00) or (P[I+3] = $FF) then begin
-        { Change the lower 3 bytes of the address to be relative to the
-          beginning of the buffer, instead of to the next instruction. If
-          decoding, do the opposite. }
-        Addr := (AddrOffset + LongWord(I) + 4) and $FFFFFF;  { may wrap, but OK }
-        Rel := P[I] or (P[I+1] shl 8) or (P[I+2] shl 16);
-        if not Encode then
-          Dec(Rel, Addr);
-        { For a slightly higher compression ratio, we want the resulting high
-          byte to be $00 for both forward and backward jumps. The high byte
-          of the original relative address is likely to be the sign extension
-          of bit 23, so if bit 23 is set, toggle all bits in the high byte. }
-        if Rel and $800000 <> 0 then
-          P[I+3] := not P[I+3];
-        if Encode then
-          Inc(Rel, Addr);
-        P[I] := Byte(Rel);
-        P[I+1] := Byte(Rel shr 8);
-        P[I+2] := Byte(Rel shr 16);
-      end;
-      Inc(I, 4);
-    end
-    else
-      Inc(I);
-  end;
-end;
-'
-=cut
-sub TransformCallInstructions {
-	my ($self, $data, $offset) = @_;
-	if (length($data) < 5) {
-		return $data;
-	}
-	if (!defined($offset)) {
-		$offset = 0;
-	}
-	my $size = length($data) - 4;
-	my $i = 0;
-	#printf("Transforming %u bytes of binary data from offset 0x%08x\n", length($data) - 4, $offset);
-	while ($i < $size) {
-		#print("Remaining data: " . ($size - $i) . "\n");
-		# Does it appear to be a CALL or JMP instruction with a relative 32-bit address?
-		my $instr = ord(substr($data, $i, 1));
-		if ($instr == 0xe8 || $instr == 0xe9) {
-			$i++;
-			# Verify that the high byte of the address is $00 or $FF. If it isn't, then what we've encountered most likely isn't a CALL or JMP.
-			my $arg = ord(substr($data, $i + 3, 1));
-			if ($arg == 0x00 || $arg == 0xff) {
-				# Change the lower 3 bytes of the address to be relative to the beginning of the buffer, instead of to the next instruction. If decoding, do the opposite.
-				my $addr = ($offset + $i + 4) & 0xffffff;
-				my $rel =  ord(substr($data, $i, 1)) | (ord(substr($data, $i + 1, 1)) << 8) | (ord(substr($data, $i + 2, 1)) << 16);
-				$rel -= $addr;
-				# Debug
-				my $old = unpack('L', substr($data, $i, 4));
-				#printf("instr:0x%02x addr:0x%08x rel:0x%08x old:0x%08x ", $instr, $addr, $rel, $old);
-				# For a slightly higher compression ratio, we want the resulting high byte to be $00 for both forward and backward jumps. The high byte of the original relative address is likely to be the sign extension of bit 23, so if bit 23 is set, toggle all bits in the high byte.
-				if ($rel & 0x800000) {
-					substr($data, $i + 3, 1) = chr(~ord(substr($data, $i + 3, 1)) & 0xff);
-				}
-				substr($data, $i, 1) = chr($rel & 0xff);
-				substr($data, $i + 1, 1) = chr(($rel >> 8) & 0xff);
-				substr($data, $i + 2, 1) = chr(($rel >> 16) & 0xff);
-				# Debug
-				my $new = unpack('L', substr($data, $i, 4));
-				#printf("new:0x%08x\n", $new);
-			}
-			$i += 4;
-		} else {
-			$i++;
-		}
-	}
-	return $data;
+sub TSetupLanguageEntry {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		Name => $self->ReadString(1),
+		LanguageName => $self->ReadString(1),
+		DialogFontName => $self->ReadString(1),
+		TitleFontName => $self->ReadString(1),
+		WelcomeFontName => $self->ReadString(1),
+		CopyrightFontName => $self->ReadString(1),
+		Data => $self->ReadString(1),
+		LicenseText => $self->ReadString(1),
+		InfoBeforeText => $self->ReadString(1),
+		InfoAfterText => $self->ReadString(1),
+		LanguageID => $self->ReadCardinal(),
+		LanguageCodePage => $self->ReadCardinal(),
+		DialogFontSize => $self->ReadInteger(),
+		TitleFontSize => $self->ReadInteger(),
+		WelcomeFontSize => $self->ReadInteger(),
+		CopyrightFontSize => $self->ReadInteger(),
+		RightToLeft => $self->ReadByte(),
+	};
+	return $ret;
 }
-
+sub TSetupCustomMessageEntry {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		Name => $self->ReadString(1),
+		Value => $self->ReadString(1),
+		LangIndex => $self->ReadInteger(),
+	};
+	return $ret;
+}
+sub TSetupPermissionEntry {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		Permissions => $self->ReadString(1),
+	};
+	return $ret;
+}
+sub TSetupTypeEntry {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		Name => $self->ReadString(1),
+		Description => $self->ReadString(1),
+		Languages => $self->ReadString(1),
+		Check => $self->ReadString(1),
+		MinVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		OnlyBelowVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		Options => $self->ReadSet([ 'toIsCustom' ]),
+		Typ => $self->ReadEnum([ 'ttUser', 'ttDefaultFull', 'ttDefaultCompact', 'ttDefaultCustom' ]),
+		Size => $self->ReadInt64(),
+	};
+	return $ret;
+}
+sub TSetupComponentEntry {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		Name => $self->ReadString(1),
+		Description => $self->ReadString(1),
+		Types => $self->ReadString(1),
+		Languages => $self->ReadString(1),
+		Check => $self->ReadString(1),
+		ExtraDiskSpaceRequired => $self->ReadInt64(),
+		Level => $self->ReadInteger(),
+		Used => $self->ReadByte(),
+		MinVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		OnlyBelowVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		Options => $self->ReadSet([ 'coFixed', 'coRestart', 'coDisableNoUninstallWarning', 'coExclusive', 'coDontInheritCheck' ]),
+		Size => $self->ReadInt64(),
+	};
+	return $ret;
+}
+sub TSetupTaskEntry {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		Name => $self->ReadString(1),
+		Description => $self->ReadString(1),
+		GroupDescription => $self->ReadString(1),
+		Components => $self->ReadString(1),
+		Languages => $self->ReadString(1),
+		Check => $self->ReadString(1),
+		Level => $self->ReadInteger(),
+		Used => $self->ReadByte(),
+		MinVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		OnlyBelowVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		Options => $self->ReadSet([ 'toExclusive', 'toUnchecked', 'toRestart', 'toCheckedOnce', 'toDontInheritCheck' ]),
+	};
+	return $ret;
+}
+sub TSetupDirEntry {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		DirName => $self->ReadString(1),
+		Components => $self->ReadString(1),
+		Tasks => $self->ReadString(1),
+		Languages => $self->ReadString(1),
+		Check => $self->ReadString(1),
+		AfterInstall => $self->ReadString(1),
+		BeforeInstall => $self->ReadString(1),
+		Attribs => $self->ReadInteger(),
+		MinVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		OnlyBelowVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		PermissionsEntry => $self->ReadSmallInt(),
+		Options => $self->ReadSet([ 'doUninsNeverUninstall', 'doDeleteAfterInstall', 'doUninsAlwaysUninstall', 'doSetNTFSCompression', 'doUnsetNTFSCompression' ]),
+	};
+	return $ret;
+}
+sub TSetupFileEntry {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		SourceFilename => $self->ReadString(1),
+		DestName => $self->ReadString(1),
+		InstallFontName => $self->ReadString(1),
+		StrongAssemblyName => $self->ReadString(1),
+		Components => $self->ReadString(1),
+		Tasks => $self->ReadString(1),
+		Languages => $self->ReadString(1),
+		Check => $self->ReadString(1),
+		AfterInstall => $self->ReadString(1),
+		BeforeInstall => $self->ReadString(1),
+		MinVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		OnlyBelowVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		LocationEntry => $self->ReadInteger(),
+		Attribs => $self->ReadInteger(),
+		ExternalSize => $self->ReadInt64(),
+		PermissionsEntry => $self->ReadSmallInt(),
+		Options => $self->ReadSet([ 'foConfirmOverwrite', 'foUninsNeverUninstall', 'foRestartReplace', 'foDeleteAfterInstall', 'foRegisterServer', 'foRegisterTypeLib', 'foSharedFile', 'foCompareTimeStamp', 'foFontIsntTrueType', 'foSkipIfSourceDoesntExist', 'foOverwriteReadOnly', 'foOverwriteSameVersion', 'foCustomDestName', 'foOnlyIfDestFileExists', 'foNoRegError', 'foUninsRestartDelete', 'foOnlyIfDoesntExist', 'foIgnoreVersion', 'foPromptIfOlder', 'foDontCopy', 'foUninsRemoveReadOnly', 'foRecurseSubDirsExternal', 'foReplaceSameVersionIfContentsDiffer', 'foDontVerifyChecksum', 'foUninsNoSharedFilePrompt', 'foCreateAllSubDirs', 'fo32Bit', 'fo64Bit', 'foExternalSizePreset', 'foSetNTFSCompression', 'foUnsetNTFSCompression', 'foGacInstall' ]),
+		FileType => $self->ReadEnum([ 'ftUserFile', 'ftUninstExe' ]),
+	};
+	return $ret;
+}
+sub TSetupIconEntry {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		IconName => $self->ReadString(1),
+		Filename => $self->ReadString(1),
+		Parameters => $self->ReadString(1),
+		WorkingDir => $self->ReadString(1),
+		IconFilename => $self->ReadString(1),
+		Comment => $self->ReadString(1),
+		Components => $self->ReadString(1),
+		Tasks => $self->ReadString(1),
+		Languages => $self->ReadString(1),
+		Check => $self->ReadString(1),
+		AfterInstall => $self->ReadString(1),
+		BeforeInstall => $self->ReadString(1),
+		AppUserModelID => $self->ReadString(1),
+		MinVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		OnlyBelowVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		IconIndex => $self->ReadInteger(),
+		ShowCmd => $self->ReadInteger(),
+		CloseOnExit => $self->ReadEnum([ 'icNoSetting', 'icYes', 'icNo' ]),
+		HotKey => $self->ReadWord(),
+		Options => $self->ReadSet([ 'ioUninsNeverUninstall', 'ioCreateOnlyIfFileExists', 'ioUseAppPaths', 'ioFolderShortcut' ]),
+	};
+	return $ret;
+}
+sub TSetupIniEntry {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		Filename => $self->ReadString(1),
+		Section => $self->ReadString(1),
+		Entry => $self->ReadString(1),
+		Value => $self->ReadString(1),
+		Components => $self->ReadString(1),
+		Tasks => $self->ReadString(1),
+		Languages => $self->ReadString(1),
+		Check => $self->ReadString(1),
+		AfterInstall => $self->ReadString(1),
+		BeforeInstall => $self->ReadString(1),
+		MinVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		OnlyBelowVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		Options => $self->ReadSet([ 'ioCreateKeyIfDoesntExist', 'ioUninsDeleteEntry', 'ioUninsDeleteEntireSection', 'ioUninsDeleteSectionIfEmpty', 'ioHasValue' ]),
+	};
+	return $ret;
+}
+sub TSetupRegistryEntry {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		Subkey => $self->ReadString(1),
+		ValueName => $self->ReadString(1),
+		ValueData => $self->ReadString(1),
+		Components => $self->ReadString(1),
+		Tasks => $self->ReadString(1),
+		Languages => $self->ReadString(1),
+		Check => $self->ReadString(1),
+		AfterInstall => $self->ReadString(1),
+		BeforeInstall => $self->ReadString(1),
+		MinVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		OnlyBelowVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		RootKey => $self->HKEY(),
+		PermissionsEntry => $self->ReadSmallInt(),
+		Typ => $self->ReadEnum([ 'rtNone', 'rtString', 'rtExpandString', 'rtDWord', 'rtBinary', 'rtMultiString', 'rtQWord' ]),
+		Options => $self->ReadSet([ 'roCreateValueIfDoesntExist', 'roUninsDeleteValue', 'roUninsClearValue', 'roUninsDeleteEntireKey', 'roUninsDeleteEntireKeyIfEmpty', 'roPreserveStringType', 'roDeleteKey', 'roDeleteValue', 'roNoError', 'roDontCreateKey', 'ro32Bit', 'ro64Bit' ]),
+	};
+	return $ret;
+}
+sub TSetupDeleteEntry {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		Name => $self->ReadString(1),
+		Components => $self->ReadString(1),
+		Tasks => $self->ReadString(1),
+		Languages => $self->ReadString(1),
+		Check => $self->ReadString(1),
+		AfterInstall => $self->ReadString(1),
+		BeforeInstall => $self->ReadString(1),
+		MinVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		OnlyBelowVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		DeleteType => $self->ReadEnum([ 'dfFiles', 'dfFilesAndOrSubdirs', 'dfDirIfEmpty' ]),
+	};
+	return $ret;
+}
+sub TSetupRunEntry {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		Name => $self->ReadString(1),
+		Parameters => $self->ReadString(1),
+		WorkingDir => $self->ReadString(1),
+		RunOnceId => $self->ReadString(1),
+		StatusMsg => $self->ReadString(1),
+		Verb => $self->ReadString(1),
+		Description => $self->ReadString(1),
+		Components => $self->ReadString(1),
+		Tasks => $self->ReadString(1),
+		Languages => $self->ReadString(1),
+		Check => $self->ReadString(1),
+		AfterInstall => $self->ReadString(1),
+		BeforeInstall => $self->ReadString(1),
+		MinVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		OnlyBelowVersion => {
+			WinVersion => $self->ReadCardinal(),
+			NTVersion => $self->ReadCardinal(),
+			NTServicePack => $self->ReadWord(),
+		},
+		ShowCmd => $self->ReadInteger(),
+		Wait => $self->ReadEnum([ 'rwWaitUntilTerminated', 'rwNoWait', 'rwWaitUntilIdle' ]),
+		Options => $self->ReadSet([ 'roShellExec', 'roSkipIfDoesntExist', 'roPostInstall', 'roUnchecked', 'roSkipIfSilent', 'roSkipIfNotSilent', 'roHideWizard', 'roRun32Bit', 'roRun64Bit', 'roRunAsOriginalUser' ]),
+	};
+	return $ret;
+}
+sub TSetupFileLocationEntry {
+	my ($self) = @_;
+	my $ret;
+	$ret = {
+		FirstSlice => $self->ReadInteger(),
+		LastSlice => $self->ReadInteger(),
+		StartOffset => $self->ReadLongInt(),
+		ChunkSuboffset => $self->ReadInt64(),
+		OriginalSize => $self->ReadInt64(),
+		ChunkCompressedSize => $self->ReadInt64(),
+		SHA1Sum => $self->TSHA1Digest(),
+		TimeStamp => $self->TFileTime(),
+		FileVersionMS => $self->DWORD(),
+		FileVersionLS => $self->DWORD(),
+		Flags => $self->ReadSet([ 'foVersionInfoValid', 'foVersionInfoNotValid', 'foTimeStampInUTC', 'foIsUninstExe', 'foCallInstructionOptimized', 'foTouch', 'foChunkEncrypted', 'foChunkCompressed', 'foSolidBreak' ]),
+	};
+	return $ret;
+}
 1;
-

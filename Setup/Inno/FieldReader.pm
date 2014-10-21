@@ -54,6 +54,22 @@ sub reader {
 	return shift()->{Reader};
 }
 
+sub read {
+	return shift()->{Reader}->read(@_);
+}
+
+sub tell {
+	return shift()->{Reader}->tell(@_);
+}
+
+sub seek {
+	return shift()->{Reader}->seek(@_);
+}
+
+sub close {
+	return shift()->{Reader}->close(@_);
+}
+
 # Reads a string, the type is determined by the first argument
 # Arguments:
 #   The type of string
