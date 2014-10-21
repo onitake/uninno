@@ -128,7 +128,7 @@ sub ParserGenerator::type_declaration::parserbyfield {
 	my $prefix = "\t" x $indent;
 	return join("\n",
 		"${prefix}sub $self->[0] {",
-		"${prefix}\tmy (\$self, \$reader) = \@_;",
+		"${prefix}\tmy (\$self) = \@_;",
 		"${prefix}\tmy \$ret;",
 		"${prefix}$parser",
 		"${prefix}\treturn \$ret;",
@@ -202,17 +202,17 @@ sub ParserGenerator::pointer_type::parserbyfield {
 
 sub ParserGenerator::set_type::makeparserbyfield {
 	my ($self, $root, $unicode, $indent) = @_;
-	return "\$reader->ReadSet(" . $self->[2]->setparserbyfield($root, $unicode, $indent) . ")";
+	return "\$self->ReadSet(" . $self->[2]->setparserbyfield($root, $unicode, $indent) . ")";
 }
 
 sub ParserGenerator::enumerated_type::makeparserbyfield {
 	my ($self, $root, $unicode, $indent) = @_;
-	return "\$reader->ReadEnum([ " . join(', ', map({ "'$_'" } @{$self->[1]->setparserbyfield($root, $unicode, $indent)})) . " ])";
+	return "\$self->ReadEnum([ " . join(', ', map({ "'$_'" } @{$self->[1]->setparserbyfield($root, $unicode, $indent)})) . " ])";
 }
 
 sub ParserGenerator::pointer_type::makeparserbyfield {
 	my ($self, $root, $unicode, $indent) = @_;
-	return "\$reader->ReadLongInt(undef and 'pointer to $self->[1]->[0]')";
+	return "\$self->ReadLongInt(undef and 'pointer to $self->[1]->[0]')";
 }
 
 sub ParserGenerator::defer0::makeparserbyfield {
@@ -226,7 +226,7 @@ sub ParserGenerator::defer0::makeparserbyfield {
 			return $subtype->makeparserbyfield($root, $unicode, $indent);
 		} else {
 			warn("Type $self->[0] not found, generating call to external parser");
-			return "\$self->$self->[0](\$reader)";
+			return "\$self->$self->[0]()";
 		}
 	}
 }
@@ -235,13 +235,13 @@ sub ParserGenerator::string_type::makeparserbyfield {
 	my ($self, $root, $unicode, $indent) = @_;
 	given ($self->[0]) {
 		when (/^AnsiString$/i) {
-			return "\$reader->ReadString(1" . (defined($self->[2]) ? (", " . $self->[2] . ")") : ")");
+			return "\$self->ReadString(1" . (defined($self->[2]) ? (", " . $self->[2] . ")") : ")");
 		}
 		when (/^WideString$/i) {
-			return "\$reader->ReadString(2" . (defined($self->[2]) ? (", " . ($self->[2] * 2) . ")") : ")");
+			return "\$self->ReadString(2" . (defined($self->[2]) ? (", " . ($self->[2] * 2) . ")") : ")");
 		}
 		when (/^String/i) {
-			return "\$reader->ReadString(" . ($unicode ? "2" : "1" ) . (defined($self->[2]) ? (", " . $self->[2] . ")") : ")");
+			return "\$self->ReadString(" . ($unicode ? "2" : "1" ) . (defined($self->[2]) ? (", " . $self->[2] . ")") : ")");
 		}
 	}
 	return undef;
@@ -251,61 +251,61 @@ sub ParserGenerator::ordinal_type_identifier::makeparserbyfield {
 	my ($self, $root, $unicode, $indent) = @_;
 	given ($self->[0]) {
 		when (/^Byte$/i) {
-			return "\$reader->ReadByte()";
+			return "\$self->ReadByte()";
 		}
 		when (/^ShortInt$/i) {
-			return "\$reader->ReadShortInt()";
+			return "\$self->ReadShortInt()";
 		}
 		when (/^Word$/i) {
-			return "\$reader->ReadWord()";
+			return "\$self->ReadWord()";
 		}
 		when (/^SmallInt$/i) {
-			return "\$reader->ReadSmallInt()";
+			return "\$self->ReadSmallInt()";
 		}
 		when (/^LongWord$/i) {
-			return "\$reader->ReadLongWord()";
+			return "\$self->ReadLongWord()";
 		}
 		when (/^Cardinal$/i) {
-			return "\$reader->ReadCardinal()";
+			return "\$self->ReadCardinal()";
 		}
 		when (/^LongInt$/i) {
-			return "\$reader->ReadLongInt()";
+			return "\$self->ReadLongInt()";
 		}
 		when (/^Integer$/i) {
-			return "\$reader->ReadInteger()";
+			return "\$self->ReadInteger()";
 		}
 		when (/^Int64$|^Integer64$/i) {
-			return "\$reader->ReadInt64()";
+			return "\$self->ReadInt64()";
 		}
 		when (/^Single$/i) {
-			return "\$reader->ReadSingle()";
+			return "\$self->ReadSingle()";
 		}
 		when (/^Currency$/i) {
-			return "\$reader->ReadCurrency()";
+			return "\$self->ReadCurrency()";
 		}
 		when (/^Double$/i) {
-			return "\$reader->ReadDouble()";
+			return "\$self->ReadDouble()";
 		}
 		when (/^Extended$/i) {
-			return "\$reader->ReadExtended()";
+			return "\$self->ReadExtended()";
 		}
 		when (/^AnsiChar$/i) {
-			return "\$reader->ReadString(1, 1)";
+			return "\$self->ReadString(1, 1)";
 		}
 		when (/^WideChar$/i) {
-			return "\$reader->ReadString(2, 2)";
+			return "\$self->ReadString(2, 2)";
 		}
 		when (/^Char$/i) {
-			return "\$reader->ReadString(" . ($unicode ? "2, 2)" : "1, 1)");
+			return "\$self->ReadString(" . ($unicode ? "2, 2)" : "1, 1)");
 		}
 		when (/^ByteBool$|^Boolean$/i) {
-			return "\$reader->ReadByte()";
+			return "\$self->ReadByte()";
 		}
 		when (/^WordBool$/i) {
-			return "\$reader->ReadWord()";
+			return "\$self->ReadWord()";
 		}
 		when (/^LongBool$/i) {
-			return "\$reader->ReadLongWord()";
+			return "\$self->ReadLongWord()";
 		}
 		default {
 			return undef;
@@ -555,30 +555,11 @@ sub ParserGenerator::defer0::setparserbyfield {
 	if (ref($self->[0])) {
 		return $self->[0]->setparserbyfield($root, $unicode, $indent);
 	} else {
-		given ($self->[0]) {
-			when (/^Byte$|^ShortInt$|^AnsiChar$/i) {
-				return "256";
-			}
-			when (/^Word$|^SmallInt$|^WideChar$/i) {
-				return "65536";
-			}
-			when (/^LongWord$|^Cardinal$|^LongInt$|^Integer$/i) {
-				return "4294967296";
-			}
-			when (/^Int64$/i) {
-				return "18446744073709551616";
-			}
-			when (/^Char$/i) {
-				return $unicode ? "65536" : "256";
-			}
-			default {
-				my $subtype = $root->findtype($self->[0]);
-				if (defined($subtype)) {
-					return $subtype->setparserbyfield($root, $unicode, $indent);
-				} else {
-					croak("Can't construct set over $self->[0], type not found");
-				}
-			}
+		my $subtype = $root->findtype($self->[0]);
+		if (defined($subtype)) {
+			return $subtype->setparserbyfield($root, $unicode, $indent);
+		} else {
+			croak("Can't construct set over $self->[0], type not found");
 		}
 	}
 }
@@ -605,6 +586,35 @@ sub ParserGenerator::list::setparserbyfield {
 sub ParserGenerator::type_declaration::setparserbyfield {
 	my ($self, $root, $unicode, $indent) = @_;
 	return $self->[2]->setparserbyfield($root, $unicode, $indent);
+}
+
+sub ParserGenerator::ordinal_type_identifier::setparserbyfield {
+	my ($self, $root, $unicode, $indent) = @_;
+	given ($self->[0]) {
+		when (/^Byte$|^ShortInt$|^AnsiChar$/i) {
+			return "256";
+		}
+		when (/^Word$|^SmallInt$|^WideChar$/i) {
+			return "65536";
+		}
+		when (/^LongWord$|^Cardinal$|^LongInt$|^Integer$/i) {
+			return "4294967296";
+		}
+		when (/^Int(eger)?64$/i) {
+			return "18446744073709551616";
+		}
+		when (/^Char$/i) {
+			return $unicode ? "65536" : "256";
+		}
+		default {
+			my $subtype = $root->findtype($self->[0]);
+			if (defined($subtype)) {
+				return $subtype->setparserbyfield($root, $unicode, $indent);
+			} else {
+				croak("Can't construct set over $self->[0], type not found");
+			}
+		}
+	}
 }
 
 1;
