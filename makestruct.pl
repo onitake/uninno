@@ -6,14 +6,15 @@ use Getopt::Long;
 use ParserGenerator;
 use DelphiGrammar;
 
-my ($help, $parser, $git, $issrc, $version, $base) = (undef, './makeparser.pl', 'git', undef, undef, 'Setup::Inno::Struct');
+my ($help, $parser, $git, $issrc, $version, $base, $stdtypes) = (undef, './makeparser.pl', 'git', undef, undef, 'Setup::Inno::Struct', 0);
 GetOptions(
 	"parser=s" => \$parser,
 	"git=s" => \$git,
 	"src=s" => \$issrc,
 	"version=s" => \$version,
 	"base=s" => \$base,
-	"help" => \$help
+	"stdtypes" => \$stdtypes,
+	"help" => \$help,
 );
 if ($help || !defined($issrc) || !defined($version)) {
 	print STDERR "Usage: makestruct.pl --src <issrc> --version <1.2.3[u]> [--parser <makeparser.pl>] [--git <git>] [--base <class>] [--help]\n";
@@ -22,6 +23,7 @@ if ($help || !defined($issrc) || !defined($version)) {
 	print STDERR "       parser     the path to the parser script (default: $parser)\n";
 	print STDERR "       git        the path to the git program (default: $git)\n";
 	print STDERR "       base       the name of the base class (default to $base)\n";
+	print STDERR "       stdtypes   add parsers for some standard Delphi types (like HKEY or DWORD)\n";
 	print STDERR "       help       for this help text\n";
 	exit 0;
 }
@@ -101,51 +103,35 @@ print("Writing to $output...\n");
 open(my $out, '>', $output);
 
 print("Writing header...\n");
+print($out "package $package;\n");
+print($out "use strict;\n");
+print($out "use base '$base';\n");
+
+if ($stdtypes) {
 print $out <<EOF;
-package $package;
-use strict;
-use base '$base';
-sub SetupHeader { my (\$self, \$reader) = \@_; return \$self->TSetupHeader(\$reader); }
-sub SetupLanguages { my (\$self, \$reader, \$count) = \@_; return [ map { \$self->TSetupLanguageEntry(\$reader) } 0..\$count-1 ]; }
-sub SetupCustomMessages { my (\$self, \$reader, \$count) = \@_; return [ map { \$self->TSetupCustomMessageEntry(\$reader) } 0..\$count-1 ]; }
-sub SetupPermissions { my (\$self, \$reader, \$count) = \@_; return [ map { \$self->TSetupPermissionEntry(\$reader) } 0..\$count-1 ]; }
-sub SetupTypes { my (\$self, \$reader, \$count) = \@_; return [ map { \$self->TSetupTypeEntry(\$reader) } 0..\$count-1 ]; }
-sub SetupComponents { my (\$self, \$reader, \$count) = \@_; return [ map { \$self->TSetupComponentEntry(\$reader) } 0..\$count-1 ]; }
-sub SetupTasks { my (\$self, \$reader, \$count) = \@_; return [ map { \$self->TSetupTaskEntry(\$reader) } 0..\$count-1 ]; }
-sub SetupDirs { my (\$self, \$reader, \$count) = \@_; return [ map { \$self->TSetupDirEntry(\$reader) } 0..\$count-1 ]; }
-sub SetupFiles { my (\$self, \$reader, \$count) = \@_; return [ map { \$self->TSetupFileEntry(\$reader) } 0..\$count-1 ]; }
-sub SetupIcons { my (\$self, \$reader, \$count) = \@_; return [ map { \$self->TSetupIconEntry(\$reader) } 0..\$count-1 ]; }
-sub SetupIniEntries { my (\$self, \$reader, \$count) = \@_; return [ map { \$self->TSetupIniEntry(\$reader) } 0..\$count-1 ]; }
-sub SetupRegistryEntries { my (\$self, \$reader, \$count) = \@_; return [ map { \$self->TSetupRegistryEntry(\$reader) } 0..\$count-1 ]; }
-sub SetupDelete { my (\$self, \$reader, \$count) = \@_; return [ map { \$self->TSetupDeleteEntry(\$reader) } 0..\$count-1 ]; }
-sub SetupRun { my (\$self, \$reader, \$count) = \@_; return [ map { \$self->TSetupRunEntry(\$reader) } 0..\$count-1 ]; }
-sub SetupFileLocations { my (\$self, \$reader, \$count) = \@_; return [ map { \$self->TSetupFileLocationEntry(\$reader) } 0..\$count-1 ]; }
 sub TFileTime {
-	my (\$self, \$reader) = \@_;
-	my \$tlow = \$reader->ReadLongWord();
-	my \$thigh = \$reader->ReadLongWord();
+	my (\$self) = \@_;
+	my \$tlow = \$self->ReadLongWord();
+	my \$thigh = \$self->ReadLongWord();
 	my \$hnsecs = \$tlow | (\$thigh << 32);
 	my \$secs = int(\$hnsecs / 10000000);
 	my \$nsecs = (\$hnsecs - \$secs * 10000000) * 100;
 	return DateTime->new(year => 1601, month => 1, day => 1, hour => 0, minute => 0, second => 0, nanosecond => 0)->add(seconds => \$secs, nanoseconds => \$nsecs);
 }
 sub HKEY {
-	my (\$self, \$reader) = \@_;
-	return \$reader->ReadLongWord();
+	return shift->ReadLongWord();
 }
 sub DWORD {
-	my (\$self, \$reader) = \@_;
-	return \$reader->ReadLongWord();
+	return shift->ReadLongWord();
 }
 sub TSHA1Digest {
-	my (\$self, \$reader) = \@_;
-	return \$reader->ReadByteArray(20);
+	return shift->ReadByteArray(20);
 }
 sub TMD5Digest {
-	my (\$self, \$reader) = \@_;
-	return \$reader->ReadByteArray(16);
+	return shift->ReadByteArray(16);
 }
 EOF
+}
 
 print("Generating parser for " . join(', ', @types) . "...\n");
 generate($out, $data, @types);
