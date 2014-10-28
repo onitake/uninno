@@ -3,6 +3,7 @@
 package Setup::Inno::Interpret4000;
 
 use strict;
+require 5.006_000;
 use base qw(Setup::Inno::Interpret2008);
 use Switch 'Perl6';
 use Carp;
@@ -23,6 +24,7 @@ use constant {
 
 sub CheckFile {
 	my ($self, $data, $location) = @_;
+	print Dumper($location);
 	if (defined($location->{Checksum})) {
 		my $digest = Digest->new('CRC-32');
 		$digest->add($data);
@@ -61,25 +63,31 @@ sub DiskInfo {
 	my $start = 0;
 	my $disk = 0;
 	for my $bin (@bins) {
-		my $input = IO::File->new($bin, 'r') || croak("Can't open $bin");
-		my $offset = 0;
+		my $input = IO::File->new($bin, 'r') || croak("Can't open $bin: $!");
+		my $sliceoffset = 0;
+		my $dataoffset = 0;
 		for my $slice (0..($header->{SlicesPerDisk} - 1)) {
 			$input->read(my $buffer, 12);
 			my ($sliceid, $size) = unpack('a8L<', $buffer);
-			$offset += 12;
-			($sliceid eq DISKSLICEID) || croak("Invalid disk slice header");
-			my $record = {
-				File => $bin,
-				Input => $input,
-				Disk => $disk,
-				Start => $start,
-				Size => $size,
-				Offset => $offset,
-			};
-			push(@ret, $record);
-			$start += $size;
-			$offset += $size;
-			$input->seek($size, Fcntl::SEEK_CUR);
+			$dataoffset += 12;
+			if ($sliceid eq DISKSLICEID) {
+				my $record = {
+					Input => $input,
+					File => $bin,
+					Disk => $disk,
+					Start => $start,
+					Size => $size,
+					SliceOffset => $sliceoffset,
+					DataOffset => $dataoffset,
+				};
+				push(@ret, $record);
+				$start += $size;
+				$dataoffset += $size;
+				$sliceoffset += $dataoffset;
+				$input->seek($size, Fcntl::SEEK_CUR);
+			} else {
+				carp("$bin has an invalid disk slice header");
+			}
 		}
 		$disk++;
 	}
@@ -89,39 +97,76 @@ sub DiskInfo {
 
 # IS 4.0.0 might still be using 2.0.8 semantics, needs verification
 sub ReadFile {
-	my ($self, $input, $header, $location, $offset1, $password) = @_;
+	my ($self, $input, $header, $location, $offset1, $password, @slices) = @_;
 	
+	#print Dumper \@slices;
 	#print Dumper $header;
 	#print Dumper $location;
 	#print("Offset1=$offset1 StartOffset=$location->{StartOffset}\n");
+	#$input->seek($offset1 + $location->{StartOffset}, Fcntl::SEEK_SET);
+	#$input->read(my $dump, $location->{ChunkCompressedSize}) || croak("Can't read compressed data");
+	#open(my $temp, '>', "/tmp/data.lzma2");
+	#print($temp $dump);
+	#undef($temp);
 	
 	# Note: once we support decryption, make sure the password is interpreted as UTF-16LE (why?)
-	(($location->{Flags}->{ChunkEncrypted} || $location->{Flags}->{foChunkEncrypted}) && !defined($password)) && die("File is encrypted, but no password was given");
+	if ($location->{Flags}->{ChunkEncrypted} || $location->{Flags}->{foChunkEncrypted}) {
+		!defined($password) && croak("File is encrypted, but no password was given");
+		croak("Encryption is not supported yet");
+	}
 	
-	$input->seek($offset1 + $location->{StartOffset}, Fcntl::SEEK_SET);
-	$input->read(my $dump, $location->{ChunkCompressedSize}) || die;
-	open(my $temp, '>', "/tmp/data.lzma2");
-	print($temp $dump);
-	undef($temp);
+	my $buffer;
 	
-	$input->seek($offset1 + $location->{StartOffset}, Fcntl::SEEK_SET);
-	$input->read(my $buffer, 4) || die("Can't read compressed block magic");
-	($buffer eq ZLIBID) || die("Compressed block ID invalid");
+	if (@slices > 1) {
+		my $i = 0;
+		my $size = $location->{ChunkCompressedSize} + 4;
+		my $offset = $offset1 + $location->{StartOffset} - $slices[$i]->{SliceOffset};
+		my $available = $slices[$i]->{Size} - $offset;
+		my $slicesize = $available < $size ? $available : $size;
+		#printf("slice=$i size=$size offset=$offset available=$available slicesize=$slicesize\n");
+		$slices[$i]->{Input}->seek($offset, Fcntl::SEEK_SET);
+		$slices[$i]->{Input}->read($buffer, $slicesize);
+		#print hexdump(data => $buffer, end_position => 127);
+		my $slicedata = $buffer;
+		$size -= $slicesize;
+		$i++;
+		while ($i < @slices && $size > 0) {
+			$offset = $slices[$i]->{DataOffset};
+			$available = $slices[$i]->{Size};
+			$slicesize = $available < $size ? $available : $size;
+			#printf("slice=$i size=$size offset=$offset available=$available slicesize=$slicesize\n");
+			$slices[$i]->{Input}->seek($offset, Fcntl::SEEK_SET);
+			$slices[$i]->{Input}->read($buffer, $slicesize);
+			#print hexdump(data => $buffer, end_position => 127);
+			$slicedata .= $buffer;
+			$size -= $slicesize;
+			$i++;
+		}
+		#print hexdump(data => $slicedata, end_position => 127);
+		# Replace input handle with virtual handle over concatenated data
+		# This requires Perl 5.6 or later, use IO::String or IO::Scalar for earlier versions
+		$input = IO::File->new(\$slicedata, 'r') || croak("Can't create file handle for preprocessed data: $!");
+	} else {
+		$input->seek($offset1 + $location->{StartOffset}, Fcntl::SEEK_SET);
+	}
+	
+	$input->read($buffer, 4) || croak("Can't read compressed block magic: $!");
+	($buffer eq ZLIBID) || croak("Compressed block ID invalid");
 
 	my $reader;
 	if ($location->{Flags}->{ChunkCompressed} || $location->{Flags}->{foChunkCompressed}) {
 		given ($self->Compression1($header)) {
 			when (/Zip$/i) {
-				$reader = IO::Uncompress::AnyInflate->new($input, Transparent => 0) || die("Can't create zlib reader");
+				$reader = IO::Uncompress::AnyInflate->new($input, Transparent => 0) || croak("Can't create zlib reader: $!");
 			}
 			when (/Bzip$/i) {
-				$reader = IO::Uncompress::Bunzip2->new($input, Transparent => 0) || die("Can't create bzip2 reader");
+				$reader = IO::Uncompress::Bunzip2->new($input, Transparent => 0) || croak("Can't create bzip2 reader: $!");
 			}
 			when (/Lzma$/i) {
-				$reader = Setup::Inno::LzmaReader->new($input, $location->{ChunkCompressedSize}) || die("Can't create lzma reader");
+				$reader = Setup::Inno::LzmaReader->new($input, $location->{ChunkCompressedSize}) || croak("Can't create lzma reader: $!");
 			}
 			when (/Lzma2$/i) {
-				$reader = Setup::Inno::Lzma2Reader->new($input, $location->{ChunkCompressedSize}) || die("Can't create lzma2 reader");
+				$reader = Setup::Inno::Lzma2Reader->new($input, $location->{ChunkCompressedSize}) || croak("Can't create lzma2 reader: $!");
 			}
 			default {
 				# Plain reader for stored mode
@@ -133,9 +178,9 @@ sub ReadFile {
 	}
 	
 	#printf("Seeking to 0x%08x...\n", $location->{ChunkSuboffset});
-	$reader->read($buffer, $location->{ChunkSuboffset});
+	$reader->seek($location->{ChunkSuboffset}, Fcntl::SEEK_CUR);
 	#print("Reading $location->{OriginalSize} bytes...\n");
-	($reader->read($buffer, $location->{OriginalSize}) >= $location->{OriginalSize}) || die("Can't uncompress file");
+	($reader->read($buffer, $location->{OriginalSize}) >= $location->{OriginalSize}) || croak("Can't uncompress file: $!");
 	
 	if ($location->{Flags}->{CallInstructionOptimized} || $location->{Flags}->{foCallInstructionOptimized}) {
 		#print("Transforming binary file...\n");
@@ -151,7 +196,7 @@ sub ReadFile {
 	#print hexdump($buffer);
 	
 	#print("Verifying checksum...\n");
-	($self->CheckFile($buffer, $location)) || die("Invalid file checksum");
+	($self->CheckFile($buffer, $location)) || croak("Invalid file checksum");
 	
 	return $buffer;
 }

@@ -142,6 +142,7 @@ sub DiskInfo { return undef; }
 #   The file location data
 #   The start offset of setup.1 data
 #   The decryption password (ignored if not encrypted)
+#   An list of slice records occupied by this file (including the first, optional)
 sub ReadFile { return undef; }
 
 # Read the setup BMPs and compression DLL
