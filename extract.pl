@@ -23,12 +23,17 @@ mkdir("/tmp/uninno/");
 for (my $i = 0; $i < $inno->FileCount(); $i++) {
 	my $file = $inno->FileInfo($i);
 	if ($file->{Type} eq 'App') {
-		printf("%u: %s %s %u %s %s%s\n", $i, $file->{Name}, $file->{Type}, $file->{Size}, $file->{Date}->format_cldr('yyyy-MM-dd HH:mm:ss'), $file->{Compressed} ? 'C' : '', $file->{Encrypted} ? 'E' : '');
-		my $data = $inno->ReadFile($i);
-		my $path = "/tmp/uninno/" . dirname($file->{Name});
-		make_path($path);
-		my $output = IO::File->new("/tmp/uninno/" . $file->{Name}, '>') || die("Can't create " . "/tmp/uninno/" . $file->{Name} . ": $^E");
-		print($output $data);
+		eval {
+			printf("%u: %s %s %u %s %s%s...", $i, $file->{Name}, $file->{Type}, $file->{Size}, $file->{Date}->format_cldr('yyyy-MM-dd HH:mm:ss'), $file->{Compressed} ? 'C' : '', $file->{Encrypted} ? 'E' : '');
+			my $data = $inno->ReadFile($i);
+			my $path = "/tmp/uninno/" . dirname($file->{Name});
+			make_path($path);
+			my $output = IO::File->new("/tmp/uninno/" . $file->{Name}, '>') || die("Can't create " . "/tmp/uninno/" . $file->{Name} . ": $^E");
+			print($output $data);
+			printf("done\n");
+		} or do {
+			printf("ERROR: $@");
+		}
 	}
 }
 
