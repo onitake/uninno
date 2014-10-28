@@ -7,6 +7,24 @@ use base qw(Setup::Inno::Interpret4106);
 use Digest;
 use Win::Exe::Util;
 
+sub CheckFile {
+	my ($self, $data, $location) = @_;
+	# TODO Some versions might carry a SHA1 hash in Checksum
+	if (defined($location->{Checksum})) {
+		my $digest = Digest->new('CRC-32');
+		$digest->add($data);
+		# CRC-32 produces a numeric result
+		return $digest->digest() == $location->{Checksum};
+	}
+	if (defined($location->{SHA1Sum})) {
+		my $digest = Digest->new('SHA-1');
+		$digest->add($data);
+		# SHA-1 produces a byte string result
+		return $digest->digest() eq $location->{SHA1Sum};
+	}
+	return 1;
+}
+
 sub OffsetTableSize {
 	return 44;
 }
