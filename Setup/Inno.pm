@@ -225,5 +225,17 @@ sub ReadFile {
 	}
 }
 
+sub FindFiles {
+	my ($self, $re) = @_;
+	my @ret;
+	for (my $i = 0; $i < $self->FileCount; $i++) {
+		my $file = $self->FileInfo($i);
+		if ($file->{Name} =~ $re) {
+			push(@ret, $i);
+		}
+	}
+	return @ret;
+}
+
 1;
 
