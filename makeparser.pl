@@ -17,7 +17,7 @@ GetOptions(
 	"help" => \$help
 );
 if ($help) {
-	print STDERR "Usage: marpa.pl [--input <input.pas>] [--type <TypeName> [--type <TypeName> ...] | --declarations] [--output <output.pm>] [--unicode | --ansi] [--help]\n";
+	print STDERR "Usage: makeparser.pl [--input <input.pas>] [--type <TypeName> [--type <TypeName> ...] | --declarations] [--output <output.pm>] [--unicode | --ansi] [--help]\n";
 	print STDERR "If no options are given, stdin and stdout are used and the declaration list is printed.\n";
 	exit 0;
 }
