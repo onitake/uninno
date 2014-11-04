@@ -4,6 +4,7 @@ package Setup::Inno::Interpret;
 
 use strict;
 use Switch 'Perl6';
+use Carp;
 use Setup::Inno::FieldReader;
 
 use constant {
@@ -23,42 +24,43 @@ sub new {
 	given ($setupid) {
 		when (SetupLdrOffsetTableID->{'2008'}) {
 			require 'Setup/Inno/Interpret2008.pm';
-			return bless({ }, 'Setup::Inno::Interpret2008');
+			return bless({ Version => '2008' }, 'Setup::Inno::Interpret2008');
 		}
 		when (SetupLdrOffsetTableID->{'4000'}) {
 			require 'Setup/Inno/Interpret4000.pm';
-			return bless({ }, 'Setup::Inno::Interpret4000');
+			return bless({ Version => '4000' }, 'Setup::Inno::Interpret4000');
 		}
 		when (SetupLdrOffsetTableID->{'4003'}) {
 			require 'Setup/Inno/Interpret4003.pm';
-			return bless({ }, 'Setup::Inno::Interpret4003');
+			return bless({ Version => '4003' }, 'Setup::Inno::Interpret4003');
 		}
 		when (SetupLdrOffsetTableID->{'4010'}) {
-			require 'Setup/Inno/Interpret5105.pm';
-			return bless({ }, 'Setup::Inno::Interpret5105');
+			require 'Setup/Inno/Interpret4010.pm';
+			return bless({ Version => '4010' }, 'Setup::Inno::Interpret4010');
 		}
 		when (SetupLdrOffsetTableID->{'4106'}) {
 			require 'Setup/Inno/Interpret4106.pm';
-			return bless({ }, 'Setup::Inno::Interpret4106');
+			return bless({ Version => '4106' }, 'Setup::Inno::Interpret4106');
 		}
 		when (SetupLdrOffsetTableID->{'5105'}) {
 			require 'Setup/Inno/Interpret5105.pm';
-			return bless({ }, 'Setup::Inno::Interpret5105');
-		}
-		default {
-			die("Unknown offset table format, not Inno Setup?");
+			return bless({ Version => '5105' }, 'Setup::Inno::Interpret5105');
 		}
 	}
-	return undef;
+	croak("Unknown offset table format, not Inno Setup?");
 }
 
+# Returns the InnoSetup version this interpreter instance can handle.
+# The version is only precise if ReBless has been called.
+# Returns just the setup header version otherwise.
 # Override this method if your class name does not follow the usual scheme
 sub Version {
-	my ($self) = @_;
-	if (ref($self) =~ /^Setup::Inno::Interpret([0-9]{4}u?)$/) {
-		return $1;
-	}
-	return '0000';
+	return shift->{Version};
+	#my ($self) = @_;
+	#if (ref($self) =~ /^Setup::Inno::Interpret([0-9]{4}u?)$/) {
+	#	return $1;
+	#}
+	#return '0000';
 }
 
 # Check a decompressed file's checksum.
@@ -91,30 +93,71 @@ sub Compression1 { return undef; }
 #   The optimized executable data
 #   The address offset (optional, 0 assumed)
 sub TransformCallInstructions {
-	my ($self, $data) = @_;
+	my ($self, $data, $offset) = @_;
 	return $data;
 }
 
-# Create a structure reader reader from a version string and a file handle
-# Uses FieldReader to construct a suitable setup.0 reader
+# Change the blessing of $self to the closest available package according to a version string.
+# In other words, parse the version string and sweep over the available version-specific interpreter
+# classes until one is found that can handle data for this InnoSetup version.
+# Also stores the exact version, so an appropriate structure reader can be created later,
 # Arguments:
 #   The InnoSetup version string
-#   A file handle
-sub StructReader {
-	my ($self, $verstr, $reader) = @_;
+sub ReBless {
+	my ($self, $verstr) = @_;
 	if ($verstr =~ /\(([0-9])\.([0-9])\.([0-9])([0-9])?([a-z])?\)(\s*\(([a-z])?\))?/) {
-		my $version = "$1$2";
-		$version .= defined($4) ? "$3$4" : "0$3";
-		$version .= (defined($5) && $5 eq 'u') || (defined($7) && $7 eq 'u') ? 'u' : '';
-		require "Setup/Inno/Struct$version.pm";
-		my $class = "Setup::Inno::Struct$version";
-		return $class->new($self->FieldReader($reader));
+		my $bareversion = "$1$2";
+		$bareversion .= defined($4) ? "$3$4" : "0$3";
+		my $version = $bareversion . ((defined($5) && $5 eq 'u') || (defined($7) && $7 eq 'u') ? 'u' : '');
+		$self->{Version} = $version;
+		my @mapping = (
+			2008,
+			4000,
+			4003,
+			4010,
+			4106,
+			5105,
+			5309,
+		);
+		my ($low, $high) = (0, $#mapping);
+		my $blessing;
+		while (!defined($blessing) && $low <= $high) {
+			my $mid = int(($low + $high) / 2);
+			if ($bareversion >= $mapping[$mid] && ($mid == $high || $bareversion < $mapping[$mid + 1])) {
+				$blessing = $mapping[$low];
+			} elsif ($bareversion < $mapping[$mid]) {
+				$high = $mid - 1;
+			} else {
+				$low = $mid + 1;
+			}
+		}
+		if (defined($blessing)) {
+			require "Setup/Inno/Interpret$blessing.pm";
+			my $class = "Setup::Inno::Interpret$blessing";
+			bless($self, $class);
+		} else {
+			die("Internal error: Interpreter class not found for $bareversion");
+		}
 	} elsif ($verstr =~ /My Inno Setup Extensions Setup Data \(3.0.6.[12]\)/) {
 		# Martijn Laan's extensions, unsupported for now
 		# Bless/return '3008' here and implement Interpret30008.pm once you support them
-		die("Unsupported version: $verstr");
+		croak("Unsupported version: $verstr");
+	} else {
+		croak("Unsupported version: $verstr");
 	}
-	die("Unsupported version: $verstr");
+}
+
+# Create a structure reader for setup.0 data.
+# You should only call this method if you have assigned the exact version with ReBless().
+# Uses FieldReader() to construct a suitable reader (handling decompression etc.).
+# Arguments:
+#   A file handle pointing to setup.0 data
+sub StructReader {
+	my ($self, $reader) = @_;
+	my $version = $self->{Version};
+	require "Setup/Inno/Struct$version.pm";
+	my $class = "Setup::Inno::Struct$version";
+	return $class->new($self->FieldReader($reader));
 }
 
 # Create a field reader from a file handle

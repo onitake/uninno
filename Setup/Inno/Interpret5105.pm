@@ -39,5 +39,52 @@ sub ParseOffsetTable {
 	return $ofstable;
 }
 
+sub TransformCallInstructions {
+	my ($self, $data, $offset) = @_;
+	if (length($data) < 5) {
+		return $data;
+	}
+	if (!defined($offset)) {
+		$offset = 0;
+	}
+	my $size = length($data) - 4;
+	my $i = 0;
+	while ($i < $size) {
+		# Does it appear to be a CALL or JMP instruction with a relative 32-bit address?
+		my $instr = ord(substr($data, $i, 1));
+		if ($instr == 0xe8 || $instr == 0xe9) {
+			$i++;
+			# Verify that the high byte of the address is $00 or $FF. If it isn't, then what we've encountered most likely isn't a CALL or JMP.
+			my $arg = ord(substr($data, $i + 3, 1));
+			if ($arg == 0x00 || $arg == 0xff) {
+				# Change the lower 3 bytes of the address to be relative to the beginning of the buffer, instead of to the next instruction. If decoding, do the opposite.
+				my $addr = $offset + $i + 4;
+				if ($i == 0x90000) {
+					my $old = unpack('L', substr($data, $i, 4));
+					printf("instr:0x%02x addr:0x%08x old:0x%08x ", $instr, $addr, $old);
+				}
+				# if (!Encode) {
+					$addr = -$addr;
+				# }
+				# Replace address
+				for (my $x = 0; $x <= 2; $x++) {
+					$addr += ord(substr($data, $i + $x, 1));
+					# Mask out the LSB or we might get a Unicode character...
+					substr($data, $i + $x, 1) = chr($addr & 0xff);
+					$addr >>= 8;
+				}
+				if ($i == 0x90000) {
+					my $new = unpack('L', substr($data, $i, 4));
+					printf("new:0x%08x\n", $new);
+				}
+			}
+			$i += 4;
+		} else {
+			$i++;
+		}
+	}
+	return $data;
+}
+
 1;
 

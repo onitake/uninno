@@ -52,6 +52,7 @@ sub new {
 	$self->{Input}->seek($self->Offset0(), Fcntl::SEEK_SET) || croak("Can't seek to setup.0 offset");
 	$self->{Input}->read(my $buffer, 64) || croak("Error reading setup ID");
 	$self->{TestID} = unpack('Z64', $buffer);
+	$self->{Interpreter}->ReBless($self->{TestID});
 	$self->{Filename} = $filename;
 	
 	return $self;
@@ -86,7 +87,7 @@ sub TotalSize {
 
 sub Version {
 	my ($self) = @_;
-	return $self->{Interpreter}->StructReader($self->{TestID}, $self->{Input})->Version;
+	return $self->{Interpreter}->Version;
 }
 
 sub Setup0 {
@@ -94,7 +95,7 @@ sub Setup0 {
 	if (!$self->{Setup0}) {
 		$self->{Setup0} = { };
 		$self->{Input}->seek($self->Offset0() + 64, Fcntl::SEEK_SET);
-		my $struct = $self->{Interpreter}->StructReader($self->{TestID}, $self->{Input});
+		my $struct = $self->{Interpreter}->StructReader($self->{Input});
 		$self->{Setup0}->{Header} = $self->{Interpreter}->SetupHeader($struct);
 		$self->{Setup0}->{Languages} = $self->{Interpreter}->SetupLanguages($struct, $self->{Setup0}->{Header}->{NumLanguageEntries});
 		$self->{Setup0}->{CustomMessages} = $self->{Interpreter}->SetupCustomMessages($struct, $self->{Setup0}->{Header}->{NumCustomMessageEntries});
@@ -125,7 +126,7 @@ sub FileLocations {
 	if (!$self->{FileLocations}) {
 		my $setup0 = $self->Setup0();
 		$self->{Input}->seek($setup0->{OffsetLocations}, Fcntl::SEEK_SET);
-		my $struct = $self->{Interpreter}->StructReader($self->{TestID}, $self->{Input});
+		my $struct = $self->{Interpreter}->StructReader($self->{Input});
 		#while (1) { $self->{Input}->seek(0x01000000, Fcntl::SEEK_SET); }
 		$self->{FileLocations} = $self->{Interpreter}->SetupFileLocations($struct, $setup0->{Header}->{NumFileLocationEntries});
 	}

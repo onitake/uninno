@@ -11,14 +11,6 @@ use IO::Uncompress::AnyInflate;
 use IO::Uncompress::Bunzip2;
 use Win::Exe::Util;
 
-=comment
-  TSetupLdrOffsetTable = packed record
-    ID: array[1..12] of Char;
-    TotalSize,
-    OffsetEXE, CompressedSizeEXE, UncompressedSizeEXE, AdlerEXE,
-    OffsetMsg, Offset0, Offset1: Longint;
-  end;
-=cut
 sub OffsetTableSize {
 	return 44;
 }
@@ -55,22 +47,6 @@ sub FieldReader {
 	return $freader;
 }
 
-=comment
-procedure CreateFileExtractor;
-const
-  DecompClasses: array[TSetupCompressMethod] of TCustomDecompressorClass =
-    (TStoredDecompressor, TZDecompressor, TBZDecompressor, TLZMA1Decompressor, TLZMA2Decompressor);
-begin
-  if (Ver>=2008) and (Ver<=4000) then FFileExtractor := TFileExtractor4000.Create(TZDecompressor)
-  else FFileExtractor := TFileExtractor.Create(DecompClasses[SetupHeader.CompressMethod]);
-  Password := FixPasswordEncoding(Password);  // For proper Unicode/Ansi support
-  if SetupHeader.EncryptionUsed and (Password<>'') and not TestPassword(Password) then
-    writeln('Warning: incorrect password');
-  FFileExtractor.CryptKey:=Password;
-end;
-
-See Extract4000.pas
-=cut
 sub ReadFile {
 	my ($self, $input, $header, $location, $offset1, $password) = @_;
 	
