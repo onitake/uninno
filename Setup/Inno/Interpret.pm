@@ -10,13 +10,22 @@ use Setup::Inno::FieldReader;
 use constant {
 	SetupLdrOffsetTableID => {
 		# These are byte strings
-		'2008' => "rDlPtS02\x{87}\x{65}\x{56}\x{78}", # 2.0.0.8 until 3.0.0.8
-		'4000' => "rDlPtS04\x{87}\x{65}\x{56}\x{78}", # 4.0.0.0 until 4.0.0.2
-		'4003' => "rDlPtS05\x{87}\x{65}\x{56}\x{78}", # 4.0.0.3 until 4.0.0.9
-		'4010' => "rDlPtS06\x{87}\x{65}\x{56}\x{78}", # 4.0.1.0 until 4.1.0.5
-		'4106' => "rDlPtS07\x{87}\x{65}\x{56}\x{78}", # 4.1.0.6 until 5.1.0.2
-		'5105' => "rDlPtS\x{cd}\x{e6}\x{d7}\x{7b}\x{0b}\x{2a}", # 5.1.0.5 until 5.5.0.0
+		'2008' => "rDlPtS02\x{87}\x{65}\x{56}\x{78}", # 2.0.8 until 3.0.8
+		'4000' => "rDlPtS04\x{87}\x{65}\x{56}\x{78}", # 4.0.0 until 4.0.2
+		'4003' => "rDlPtS05\x{87}\x{65}\x{56}\x{78}", # 4.0.3 until 4.0.9
+		'4010' => "rDlPtS06\x{87}\x{65}\x{56}\x{78}", # 4.0.10 until 4.1.5
+		'4106' => "rDlPtS07\x{87}\x{65}\x{56}\x{78}", # 4.1.6 until 5.1.2
+		'5105' => "rDlPtS\x{cd}\x{e6}\x{d7}\x{7b}\x{0b}\x{2a}", # from 5.1.5
 	},
+	InterpreterVersions => [
+		2008,
+		4000,
+		4003,
+		4010,
+		4106,
+		5105,
+		5309,
+	],
 };
 
 sub new {
@@ -110,30 +119,32 @@ sub ReBless {
 		$bareversion .= defined($4) ? "$3$4" : "0$3";
 		my $version = $bareversion . ((defined($5) && $5 eq 'u') || (defined($7) && $7 eq 'u') ? 'u' : '');
 		$self->{Version} = $version;
-		my @mapping = (
-			2008,
-			4000,
-			4003,
-			4010,
-			4106,
-			5105,
-			5309,
-		);
-		my ($low, $high) = (0, $#mapping);
-		my $blessing;
-		while (!defined($blessing) && $low <= $high) {
+		my ($low, $high) = (0, $#{InterpreterVersions()});
+		my $found;
+		if ($bareversion >= InterpreterVersions->[$high]) {
+			# above or equal max
+			$found = InterpreterVersions->[$high];
+		} elsif ($bareversion < InterpreterVersions->[$low]) {
+			# below min
+			$high = $low;
+		}
+		while (!defined($found) && $low < $high) {
 			my $mid = int(($low + $high) / 2);
-			if ($bareversion >= $mapping[$mid] && ($mid == $high || $bareversion < $mapping[$mid + 1])) {
-				$blessing = $mapping[$low];
-			} elsif ($bareversion < $mapping[$mid]) {
-				$high = $mid - 1;
+			if ($bareversion >= InterpreterVersions->[$mid]) {
+				# above or equal mid (and below high)
+				if ($bareversion < InterpreterVersions->[$mid + 1]) {
+					$found = InterpreterVersions->[$mid];
+				} else {
+					$low = $mid;
+				}
 			} else {
-				$low = $mid + 1;
+				# below mid (and above or equal low)
+				$high = $mid;
 			}
 		}
-		if (defined($blessing)) {
-			require "Setup/Inno/Interpret$blessing.pm";
-			my $class = "Setup::Inno::Interpret$blessing";
+		if (defined($found)) {
+			require "Setup/Inno/Interpret$found.pm";
+			my $class = "Setup::Inno::Interpret$found";
 			bless($self, $class);
 		} else {
 			die("Internal error: Interpreter class not found for $bareversion");
