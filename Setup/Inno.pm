@@ -12,15 +12,13 @@ use Setup::Inno::Interpret;
 use Carp;
 use Data::Dumper;
 
-use constant {
-	SetupLdrExeHeaderOffset => 0x30,
-	SetupLdrExeHeaderID => 0x6F6E6E49, # 'Inno'
-	SetupLdrOffsetTableResID => 11111,
-	UninstallerMsgTailID => 0x67734D49,
-	ExeHeaderLength => 8,
-	DefaultUninstallExeName => "uninstall.exe",
-	DefaultRegSvrExeName => "regsvr.exe",
-};
+our $SetupLdrExeHeaderOffset = 0x30;
+our $SetupLdrExeHeaderID = 0x6F6E6E49; # 'Inno'
+our $SetupLdrOffsetTableResID = 11111;
+our $UninstallerMsgTailID = 0x67734D49;
+our $ExeHeaderLength = 8;
+our $DefaultUninstallExeName = "uninstall.exe";
+our $DefaultRegSvrExeName = "regsvr.exe";
 
 sub new {
 	my ($class, $filename) = @_;
@@ -31,10 +29,10 @@ sub new {
 	bless($self, $class);
 
 	eval {
-		$self->{Input}->seek(SetupLdrExeHeaderOffset, Fcntl::SEEK_SET) || croak("Can't seek to Inno header");
+		$self->{Input}->seek($SetupLdrExeHeaderOffset, Fcntl::SEEK_SET) || croak("Can't seek to Inno header");
 		$self->{Input}->read(my $buffer, 12) || croak("Can't get Inno header");
 		my $SetupLdrExeHeader = unpackbinary($buffer, '(L3)<', 'ID', 'OffsetTableOffset', 'NotOffsetTableOffset');
-		($SetupLdrExeHeader->{ID} == SetupLdrExeHeaderID) || croak("Unknown file type");
+		($SetupLdrExeHeader->{ID} == $SetupLdrExeHeaderID) || croak("Unknown file type");
 		($SetupLdrExeHeader->{OffsetTableOffset} == ~$SetupLdrExeHeader->{NotOffsetTableOffset}) || croak("Offset table pointer checksum error");
 		$self->{Input}->seek($SetupLdrExeHeader->{OffsetTableOffset}, Fcntl::SEEK_SET) || croak("Can't seek to offset table");
 		$self->{Input}->read($buffer, 12) || croak("Error reading offset table ID");
@@ -43,7 +41,7 @@ sub new {
 		$self->{OffsetTable} = $self->{Interpreter}->ParseOffsetTable($buffer . $buffer2);
 	} or do {
 		my $exe = Win::Exe->new($self->{Input});
-		my $OffsetTable = $exe->FindResource('RcData', SetupLdrOffsetTableResID) || croak("Can't find offset table resource");
+		my $OffsetTable = $exe->FindResource('RcData', $SetupLdrOffsetTableResID) || croak("Can't find offset table resource");
 		$self->{Interpreter} = Setup::Inno::Interpret->new(substr($OffsetTable, 0, 12));
 		$self->{OffsetTable} = $self->{Interpreter}->ParseOffsetTable($OffsetTable);
 	};
@@ -178,7 +176,7 @@ sub FileInfo {
 			if ($file->{DestName}) {
 				$name = $file->{DestName};
 			} else {
-				$name = DefaultUninstallExeName;
+				$name = $DefaultUninstallExeName;
 			}
 		}
 		when (/RegSvrExe/i) {
@@ -186,7 +184,7 @@ sub FileInfo {
 			if ($file->{DestName}) {
 				$name = $file->{DestName};
 			} else {
-				$name = DefaultRegSvrExeName;
+				$name = $DefaultRegSvrExeName;
 			}
 		}
 		default {

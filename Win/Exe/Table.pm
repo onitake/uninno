@@ -71,31 +71,29 @@ use Win::Exe::Util;
 #use File::Type;
 use Data::Dumper;
 
-use constant {
-	#FileType => File::Type->new(),
-	ResourceTypes => {
-		Accelerator => 9, # Accelerator table.
-		AniCursor => 21, # Animated cursor.
-		AniIcon => 22, # Animated icon.
-		Bitmap => 2, # Bitmap resource.
-		Cursor => 1, # Hardware-dependent cursor resource.
-		Dialog => 5, # Dialog box.
-		DlgInclude => 17, # Allows a resource editing tool to associate a string with an .rc file. Typically, the string is the name of the header file that provides symbolic names. The resource compiler parses the string but otherwise ignores the value. For example, 1 DLGINCLUDE "MyFile.h"
-		Font => 8, # Font resource.
-		FontDir => 7, # Font directory resource.
-		GroupCursor => 12, # Hardware-independent cursor resource.
-		GroupIcon => 14, # Hardware-independent icon resource.
-		Html => 23, # HTML resource.
-		Icon => 3, # Hardware-dependent icon resource.
-		Manifest => 24, # Side-by-Side Assembly Manifest.
-		Menu => 4, # Menu resource.
-		MessageTable => 11, # Message-table entry.
-		PlugPlay => 19, # Plug and Play resource.
-		RcData => 10, # Application-defined resource (raw data).
-		String => 6, # String-table entry.
-		Version => 16, # Version resource.
-		Vxd => 20, # VXD.
-	},
+#our $FileType = File::Type->new();
+our $ResourceTypes = {
+    Accelerator => 9, # Accelerator table.
+    AniCursor => 21, # Animated cursor.
+    AniIcon => 22, # Animated icon.
+    Bitmap => 2, # Bitmap resource.
+    Cursor => 1, # Hardware-dependent cursor resource.
+    Dialog => 5, # Dialog box.
+    DlgInclude => 17, # Allows a resource editing tool to associate a string with an .rc file. Typically, the string is the name of the header file that provides symbolic names. The resource compiler parses the string but otherwise ignores the value. For example, 1 DLGINCLUDE "MyFile.h"
+    Font => 8, # Font resource.
+    FontDir => 7, # Font directory resource.
+    GroupCursor => 12, # Hardware-independent cursor resource.
+    GroupIcon => 14, # Hardware-independent icon resource.
+    Html => 23, # HTML resource.
+    Icon => 3, # Hardware-dependent icon resource.
+    Manifest => 24, # Side-by-Side Assembly Manifest.
+    Menu => 4, # Menu resource.
+    MessageTable => 11, # Message-table entry.
+    PlugPlay => 19, # Plug and Play resource.
+    RcData => 10, # Application-defined resource (raw data).
+    String => 6, # String-table entry.
+    Version => 16, # Version resource.
+    Vxd => 20, # VXD.
 };
 
 sub parsedirectory {
@@ -163,8 +161,8 @@ sub GetResource {
 	my $dir;
 	if (defined($self->{Resources}->{$type})) {
 		$dir = $self->{Resources}->{$type};
-	} elsif (defined(ResourceTypes->{$type})) {
-		$dir = $self->{Resources}->{ResourceTypes->{$type}};
+	} elsif (defined($ResourceTypes->{$type})) {
+		$dir = $self->{Resources}->{$ResourceTypes->{$type}};
 	}
 	if ($dir) {
 		if ($dir->{DataIsDirectory}) {

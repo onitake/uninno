@@ -17,10 +17,8 @@ use Data::Hexdumper;
 use Data::Dumper;
 use Digest;
 
-use constant {
-	ZLIBID => "zlb\x{1a}",
-	DISKSLICEID => "idska32\x{1a}",
-};
+our $ZLIBID = "zlb\x{1a}";
+our $DISKSLICEID = "idska32\x{1a}";
 
 sub CheckFile {
 	my ($self, $data, $location) = @_;
@@ -70,7 +68,7 @@ sub DiskInfo {
 			$input->read(my $buffer, 12);
 			my ($sliceid, $size) = unpack('a8L<', $buffer);
 			$dataoffset += 12;
-			if ($sliceid eq DISKSLICEID) {
+			if ($sliceid eq $DISKSLICEID) {
 				my $record = {
 					Input => $input,
 					File => $bin,
@@ -151,7 +149,7 @@ sub ReadFile {
 	}
 	
 	$input->read($buffer, 4) || croak("Can't read compressed block magic: $!");
-	($buffer eq ZLIBID) || croak("Compressed block ID invalid");
+	($buffer eq $ZLIBID) || croak("Compressed block ID invalid");
 
 	my $reader;
 	if ($location->{Flags}->{ChunkCompressed} || $location->{Flags}->{foChunkCompressed}) {

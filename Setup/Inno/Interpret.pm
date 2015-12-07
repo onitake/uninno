@@ -7,51 +7,49 @@ use Switch 'Perl6';
 use Carp;
 use Setup::Inno::FieldReader;
 
-use constant {
-	SetupLdrOffsetTableID => {
-		# These are byte strings
-		'2008' => "rDlPtS02\x{87}\x{65}\x{56}\x{78}", # 2.0.8 until 3.0.8
-		'4000' => "rDlPtS04\x{87}\x{65}\x{56}\x{78}", # 4.0.0 until 4.0.2
-		'4003' => "rDlPtS05\x{87}\x{65}\x{56}\x{78}", # 4.0.3 until 4.0.9
-		'4010' => "rDlPtS06\x{87}\x{65}\x{56}\x{78}", # 4.0.10 until 4.1.5
-		'4106' => "rDlPtS07\x{87}\x{65}\x{56}\x{78}", # 4.1.6 until 5.1.2
-		'5105' => "rDlPtS\x{cd}\x{e6}\x{d7}\x{7b}\x{0b}\x{2a}", # from 5.1.5
-	},
-	InterpreterVersions => [
-		2008,
-		4000,
-		4003,
-		4010,
-		4106,
-		5105,
-		5309,
-	],
+our $SetupLdrOffsetTableID = {
+    # These are byte strings
+    '2008' => "rDlPtS02\x{87}\x{65}\x{56}\x{78}", # 2.0.8 until 3.0.8
+    '4000' => "rDlPtS04\x{87}\x{65}\x{56}\x{78}", # 4.0.0 until 4.0.2
+    '4003' => "rDlPtS05\x{87}\x{65}\x{56}\x{78}", # 4.0.3 until 4.0.9
+    '4010' => "rDlPtS06\x{87}\x{65}\x{56}\x{78}", # 4.0.10 until 4.1.5
+    '4106' => "rDlPtS07\x{87}\x{65}\x{56}\x{78}", # 4.1.6 until 5.1.2
+    '5105' => "rDlPtS\x{cd}\x{e6}\x{d7}\x{7b}\x{0b}\x{2a}", # from 5.1.5
 };
+our $InterpreterVersions = [
+    2008,
+    4000,
+    4003,
+    4010,
+    4106,
+    5105,
+    5309,
+];
 
 sub new {
 	my ($class, $setupid) = @_;
 	given ($setupid) {
-		when (SetupLdrOffsetTableID->{'2008'}) {
+		when ($SetupLdrOffsetTableID->{'2008'}) {
 			require 'Setup/Inno/Interpret2008.pm';
 			return bless({ Version => '2008' }, 'Setup::Inno::Interpret2008');
 		}
-		when (SetupLdrOffsetTableID->{'4000'}) {
+		when ($SetupLdrOffsetTableID->{'4000'}) {
 			require 'Setup/Inno/Interpret4000.pm';
 			return bless({ Version => '4000' }, 'Setup::Inno::Interpret4000');
 		}
-		when (SetupLdrOffsetTableID->{'4003'}) {
+		when ($SetupLdrOffsetTableID->{'4003'}) {
 			require 'Setup/Inno/Interpret4003.pm';
 			return bless({ Version => '4003' }, 'Setup::Inno::Interpret4003');
 		}
-		when (SetupLdrOffsetTableID->{'4010'}) {
+		when ($SetupLdrOffsetTableID->{'4010'}) {
 			require 'Setup/Inno/Interpret4010.pm';
 			return bless({ Version => '4010' }, 'Setup::Inno::Interpret4010');
 		}
-		when (SetupLdrOffsetTableID->{'4106'}) {
+		when ($SetupLdrOffsetTableID->{'4106'}) {
 			require 'Setup/Inno/Interpret4106.pm';
 			return bless({ Version => '4106' }, 'Setup::Inno::Interpret4106');
 		}
-		when (SetupLdrOffsetTableID->{'5105'}) {
+		when ($SetupLdrOffsetTableID->{'5105'}) {
 			require 'Setup/Inno/Interpret5105.pm';
 			return bless({ Version => '5105' }, 'Setup::Inno::Interpret5105');
 		}
@@ -119,21 +117,21 @@ sub ReBless {
 		$bareversion .= defined($4) ? "$3$4" : "0$3";
 		my $version = $bareversion . ((defined($5) && $5 eq 'u') || (defined($7) && $7 eq 'u') ? 'u' : '');
 		$self->{Version} = $version;
-		my ($low, $high) = (0, $#{InterpreterVersions()});
+		my ($low, $high) = (0, $#{$InterpreterVersions});
 		my $found;
-		if ($bareversion >= InterpreterVersions->[$high]) {
+		if ($bareversion >= $InterpreterVersions->[$high]) {
 			# above or equal max
-			$found = InterpreterVersions->[$high];
-		} elsif ($bareversion < InterpreterVersions->[$low]) {
+			$found = $InterpreterVersions->[$high];
+		} elsif ($bareversion < $InterpreterVersions->[$low]) {
 			# below min
 			$high = $low;
 		}
 		while (!defined($found) && $low < $high) {
 			my $mid = int(($low + $high) / 2);
-			if ($bareversion >= InterpreterVersions->[$mid]) {
+			if ($bareversion >= $InterpreterVersions->[$mid]) {
 				# above or equal mid (and below high)
-				if ($bareversion < InterpreterVersions->[$mid + 1]) {
-					$found = InterpreterVersions->[$mid];
+				if ($bareversion < $InterpreterVersions->[$mid + 1]) {
+					$found = $InterpreterVersions->[$mid];
 				} else {
 					$low = $mid;
 				}

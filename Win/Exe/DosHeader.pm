@@ -5,9 +5,7 @@ package Win::Exe::DosHeader;
 use strict;
 use Win::Exe::Util;
 
-use constant {
-	ExeMagic => 0x5A4D, # 'MZ'
-};
+our $ExeMagic = 0x5A4D; # 'MZ'
 
 sub new {
 	my ($class, $exe) = @_;
@@ -15,7 +13,7 @@ sub new {
 	$exe->{Input}->seek(0, 0);
 	$exe->{Input}->read($buffer, 64);
 	my $self = unpackbinary($buffer, '(S14a8S2a20l)<', 'Magic', 'Cblp', 'Cp', 'Crlc', 'Cparhdr', 'Minalloc', 'Maxalloc', 'Ss', 'Sp', 'Csum', 'Ip', 'Cs', 'Lfarlc', 'Ovno', 'Res', 'Oemid', 'Oeminfo', 'Res2', 'Lfanew');
-	($self->{Magic} == ExeMagic) || die("Invalid magic, this is not an EXE file");
+	($self->{Magic} == $ExeMagic) || die("Invalid magic, this is not an EXE file");
 	return bless($self, $class);
 }
 

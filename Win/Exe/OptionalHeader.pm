@@ -8,10 +8,10 @@ use Switch 'Perl6';
 sub new {
 	my ($class, $exe) = @_;
 	given ($exe->PeHeader()->{Machine}) {
-		when (Win::Exe::PeHeader::Machine->{I386}) {
+		when ($Win::Exe::PeHeader::Machine->{I386}) {
 			return Win::Exe::OptionalHeader::I386->new($exe);
 		}
-		when (Win::Exe::PeHeader::Machine->{Amd64}) {
+		when ($Win::Exe::PeHeader::Machine->{Amd64}) {
 			return Win::Exe::OptionalHeader::Amd64->new($exe);
 		}
 		default {
@@ -27,34 +27,32 @@ package Win::Exe::OptionalHeader::I386;
 use strict;
 use Win::Exe::Util;
 
-use constant {
-	Subsystem => {
-		Native => 1, # image doesn't require a subsystem.
-		WindowsGui => 2, # image runs in the windows gui subsystem.
-		WindowsCui => 3, # image runs in the windows character subsystem.
-		Os2Cui => 5, # image runs in the os/2 character subsystem.
-		PosixCui => 7, # image runs in the posix character subsystem.
-		NativeWindows => 8, # image is a native win9x driver.
-		WindowsCeGui => 9, # image runs in the windows ce subsystem.
-		EfiApplication => 10,
-		EfiBootServiceDriver => 11,
-		EfiRuntimeDriver => 12,
-		EfiRom => 13,
-		Xbox => 14,
-		WindowsBootApplication => 16,
-	},
-	Win32Characteristic => {
-		DynamicBase => 0x0040, # DLL can move (ASLR)
-		ForceIntegrity => 0x0080, # Code Integrity Image
-		NxCompat => 0x0100, # Image is NX compatible
-		NoIsolation => 0x0200, # Image understands isolation and doesn't want it
-		NoSeh => 0x0400, # Image does not use SEH.  No SE handler may reside in this image
-		NoBind => 0x0800, # Do not bind this image.
-		WdmDriver => 0x2000, # Driver uses WDM model
-		TerminalServerAware => 0x8000,
-	},
-	Win32Magic => 0x010B,
+our $Subsystem = {
+    Native => 1, # image doesn't require a subsystem.
+    WindowsGui => 2, # image runs in the windows gui subsystem.
+    WindowsCui => 3, # image runs in the windows character subsystem.
+    Os2Cui => 5, # image runs in the os/2 character subsystem.
+    PosixCui => 7, # image runs in the posix character subsystem.
+    NativeWindows => 8, # image is a native win9x driver.
+    WindowsCeGui => 9, # image runs in the windows ce subsystem.
+    EfiApplication => 10,
+    EfiBootServiceDriver => 11,
+    EfiRuntimeDriver => 12,
+    EfiRom => 13,
+    Xbox => 14,
+    WindowsBootApplication => 16,
 };
+our $Win32Characteristic = {
+    DynamicBase => 0x0040, # DLL can move (ASLR)
+    ForceIntegrity => 0x0080, # Code Integrity Image
+    NxCompat => 0x0100, # Image is NX compatible
+    NoIsolation => 0x0200, # Image understands isolation and doesn't want it
+    NoSeh => 0x0400, # Image does not use SEH.  No SE handler may reside in this image
+    NoBind => 0x0800, # Do not bind this image.
+    WdmDriver => 0x2000, # Driver uses WDM model
+    TerminalServerAware => 0x8000,
+};
+our $Win32Magic = 0x010B;
 
 sub new {
 	my $class = shift;
@@ -68,7 +66,7 @@ sub new {
 		'MinorOperatingSystemVersion', 'MajorImageVersion', 'MinorImageVersion', 'MajorSubsystemVersion', 'MinorSubsystemVersion', 'Win32VersionValue', 'SizeOfImage', 'SizeOfHeaders',
 		'CheckSum', 'Subsystem', 'DllCharacteristics', 'SizeOfStackReserve', 'SizeOfStackCommit', 'SizeOfHeapReserve', 'SizeOfHeapCommit',
 		'LoaderFlags', 'NumberOfRvaAndSizes');
-	($self->{Magic} == Win32Magic) || die("Invalid optional header magic");
+	($self->{Magic} == $Win32Magic) || die("Invalid optional header magic");
 	my @Keys = ('ExportTable', 'ImportTable', 'ResourceTable', 'ExceptionTable', 'SecurityTable', 'BaserelocTable', 'DebugDirectory',
 		'Architecture', 'GlobalPtr', 'TlsTable', 'LoadConfigTable', 'BoundImportTable', 'IatTable', 'DelayImportTable', 'ComDescriptor');
 	$self->{DataDirectory} = { };
@@ -125,8 +123,8 @@ sub Describe {
 sub Characteristics {
 	my $self = shift;
 	my @characteristics;
-	for my $key (keys(%{(Win32Characteristic)})) {
-		if ($self->{DllCharacteristics} & Win32Characteristic->{$key}) {
+	for my $key (keys(%{$Win32Characteristic})) {
+		if ($self->{DllCharacteristics} & $Win32Characteristic->{$key}) {
 			push(@characteristics, $key);
 		}
 	}
@@ -135,7 +133,7 @@ sub Characteristics {
 
 sub SubsystemName {
 	my $self = shift;
-	my @names = map { $self->{Subsystem} == Subsystem->{$_} ? $_ : () } keys(%{(Subsystem)});
+	my @names = map { $self->{Subsystem} == $Subsystem->{$_} ? $_ : () } keys(%{$Subsystem});
 	return $names[0];
 }
 
