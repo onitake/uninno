@@ -36,7 +36,7 @@ sub FieldReader {
 	if (defined($offset)) {
 		$reader->seek($offset, Fcntl::SEEK_SET);
 	}
-	my $creader = Setup::Inno::BlockReaderNew->new($reader, $offset, 4096) || die("Can't create block reader");
+	my $creader = Setup::Inno::BlockReader->new($reader, $offset, 4096) || die("Can't create block reader");
 	my $freader = Setup::Inno::FieldReader->new($creader) || die("Can't create field reader");
 	return $freader;
 }
