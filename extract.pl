@@ -3,7 +3,6 @@
 use strict;
 use warnings;
 use diagnostics;
-use Data::Dumper;
 use Setup::Inno;
 use Getopt::Long;
 use Text::Glob 'glob_to_regex';
@@ -51,8 +50,6 @@ if ($mode eq 'list') {
 		}
 	}
 } elsif ($mode eq 'extract') {
-	#my @files = map({ $inno->FindFiles($_) } @patterns);
-	#for (my $i = 0; $i < $inno->FileCount; $i++) {
 	for my $i (map({ $inno->FindFiles($_) } @patterns)) {
 		my $file = $inno->FileInfo($i);
 		if ($file->{Type} eq 'App') {
@@ -67,10 +64,8 @@ if ($mode eq 'list') {
 				$name = catfile($outdir, $name);
 				my $path = dirname($name);
 				if (!stat($path)) {
-					#print("Creating $path\n");
 					make_path($path);
 				}
-				#print("Writing to $name\n");
 				my $writeone = $overwriteall;
 				if (stat($name) && !$writeone) {
 					print(" $name exists. Overwrite? [y/N/a]");

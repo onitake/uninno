@@ -10,7 +10,6 @@ use Win::Exe;
 use Win::Exe::Util;
 use Setup::Inno::Interpret;
 use Carp;
-use Data::Dumper;
 
 our $SetupLdrExeHeaderOffset = 0x30;
 our $SetupLdrExeHeaderID = 0x6F6E6E49; # 'Inno'
@@ -210,8 +209,6 @@ sub ReadFile {
 	my $file = $self->{Setup0}->{Files}->[$index];
 	my $location = $locations->[$file->{LocationEntry}];
 	if ($self->DiskSpanning()) {
-		#print Dumper($self->DiskInfo);
-		#print Dumper($location);
 		my @slices;
 		for my $slice ($location->{FirstSlice}..$location->{LastSlice}) {
 			push(@slices, $self->DiskInfo->[$slice]);

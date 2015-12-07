@@ -19,7 +19,6 @@ sub open {
 	my $crc = Digest->new('CRC-32');
 	$crc->add(substr($buffer, 4, 5));
 	my $digest = $crc->digest;
-	#print(STDERR "Header CRC: file=$headercrc calculated=$digest\n");
 	($digest == $headercrc) || croak("Invalid CRC in compression header");
 	
 	$handle->read(my $indata, $storedsize);
@@ -63,7 +62,6 @@ sub open {
 				my $lclp = $lclppb - $pb * 45;
 				my $lp = int($lclp / 9);
 				my $lc = $lclp - $lp * 9;
-				#print(STDERR "lc=$lc,lp=$lp,pb=$pb,dict=$dictsize\n");
 				if (!exec("xz --stdout --decompress --format=raw --lzma1=lc=$lc,lp=$lp,pb=$pb,dict=$dictsize")) {
 					print(STDERR "Can't execute xz utility\n");
 					exit(5);
@@ -75,7 +73,6 @@ sub open {
 
 		my ($offset, $bytes) = (0, 0);
 		do {
-			#print(STDERR time() . ": Reading\n");
 			$bytes = $framesize < $storedsize - $offset ? $framesize : $storedsize - $offset;
 			if ($bytes > 4) {
 				my $blockcrc = unpack('L<', substr($indata, $offset, 4));

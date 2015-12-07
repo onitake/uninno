@@ -179,7 +179,6 @@ sub new {
 		die("Can't fork decompression feeder");
 	} elsif ($pidi == 0) {
 		# Child; fork and pipe data to xz
-		#print(STDERR "xz --stdout --decompress --format=raw --lzma1=lc=$lc,lp=$lp,pb=$pb,dict=$dictsize\n");
 		my $pido = open(my $fdo, "|xz --stdout --decompress --format=raw --lzma1=lc=$lc,lp=$lp,pb=$pb,dict=$dictsize");
 		if (!defined($pido)) {
 			die("Can't fork xz decompressor");
@@ -195,8 +194,6 @@ sub new {
 			$rdbytes = $reader->read(my $buffer, 4096) || die("Can't read from stream");
 			if ($rdbytes) {
 				print(STDERR "Writing " . length($buffer) . " bytes\n");
-				#use Data::Hexdumper;
-				#print(STDERR hexdump($buffer));
 				$xz->write($buffer) || die("Can't write to decompressor");
 			}
 		}
@@ -209,9 +206,6 @@ sub new {
 		# Parent; return handle
 		print(STDERR "Returning stdout from xz subprocess $pidi\n");
 		my $input = IO::Handle->new_from_fd($fdi, 'r');
-		#$input->read(my $buffer, 128);
-		#use Data::Hexdumper;
-		#print(STDERR hexdump($buffer));
 		return bless($input, $class);
 	}
 }

@@ -69,7 +69,6 @@ use strict;
 use Encode qw(decode);
 use Win::Exe::Util;
 #use File::Type;
-use Data::Dumper;
 
 #our $FileType = File::Type->new();
 our $ResourceTypes = {

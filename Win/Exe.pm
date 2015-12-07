@@ -13,7 +13,6 @@ use Win::Exe::OptionalHeader;
 use Win::Exe::Section;
 use Win::Exe::Table;
 use Carp;
-use Data::Dumper;
 
 use overload (
 	'""' => \&Describe,

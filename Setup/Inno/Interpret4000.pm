@@ -13,8 +13,6 @@ use IO::Uncompress::AnyInflate;
 use IO::Uncompress::Bunzip2;
 use File::Basename;
 use Setup::Inno::LzmaReader;
-use Data::Hexdumper;
-use Data::Dumper;
 use Digest;
 
 our $ZLIBID = "zlb\x{1a}";
@@ -22,7 +20,6 @@ our $DISKSLICEID = "idska32\x{1a}";
 
 sub CheckFile {
 	my ($self, $data, $location) = @_;
-	print Dumper($location);
 	if (defined($location->{Checksum})) {
 		my $digest = Digest->new('CRC-32');
 		$digest->add($data);
@@ -56,7 +53,6 @@ sub DiskInfo {
 	my @unsorted = grep(/^$basename-[0-9]+\.bin$/, readdir($dir));
 	closedir($dir);
 	my @bins = map({ $basedir . '/' . $_ } sort({ $a =~ /-([0-9]+)\.bin$/; my $first = $1; $b =~ /-([0-9]+)\.bin$/; my $second = $1; $first cmp $second; } @unsorted));
-	#print Dumper(@bins);
 	my @ret = ();
 	my $start = 0;
 	my $disk = 0;
@@ -89,23 +85,12 @@ sub DiskInfo {
 		}
 		$disk++;
 	}
-	#print Dumper(@ret);
 	return \@ret;
 }
 
 # IS 4.0.0 might still be using 2.0.8 semantics, needs verification
 sub ReadFile {
 	my ($self, $input, $header, $location, $offset1, $password, @slices) = @_;
-	
-	#print Dumper \@slices;
-	#print Dumper $header;
-	#print Dumper $location;
-	#print("Offset1=$offset1 StartOffset=$location->{StartOffset}\n");
-	#$input->seek($offset1 + $location->{StartOffset}, Fcntl::SEEK_SET);
-	#$input->read(my $dump, $location->{ChunkCompressedSize}) || croak("Can't read compressed data");
-	#open(my $temp, '>', "/tmp/data.lzma2");
-	#print($temp $dump);
-	#undef($temp);
 	
 	# Note: once we support decryption, make sure the password is interpreted as UTF-16LE (why?)
 	if ($location->{Flags}->{ChunkEncrypted} || $location->{Flags}->{foChunkEncrypted}) {
@@ -121,10 +106,8 @@ sub ReadFile {
 		my $offset = $offset1 + $location->{StartOffset} - $slices[$i]->{SliceOffset};
 		my $available = $slices[$i]->{Size} - $offset;
 		my $slicesize = $available < $size ? $available : $size;
-		#printf("slice=$i size=$size offset=$offset available=$available slicesize=$slicesize\n");
 		$slices[$i]->{Input}->seek($offset, Fcntl::SEEK_SET);
 		$slices[$i]->{Input}->read($buffer, $slicesize);
-		#print hexdump(data => $buffer, end_position => 127);
 		my $slicedata = $buffer;
 		$size -= $slicesize;
 		$i++;
@@ -132,15 +115,12 @@ sub ReadFile {
 			$offset = $slices[$i]->{DataOffset};
 			$available = $slices[$i]->{Size};
 			$slicesize = $available < $size ? $available : $size;
-			#printf("slice=$i size=$size offset=$offset available=$available slicesize=$slicesize\n");
 			$slices[$i]->{Input}->seek($offset, Fcntl::SEEK_SET);
 			$slices[$i]->{Input}->read($buffer, $slicesize);
-			#print hexdump(data => $buffer, end_position => 127);
 			$slicedata .= $buffer;
 			$size -= $slicesize;
 			$i++;
 		}
-		#print hexdump(data => $slicedata, end_position => 127);
 		# Replace input handle with virtual handle over concatenated data
 		# This requires Perl 5.6 or later, use IO::String or IO::Scalar for earlier versions
 		$input = IO::File->new(\$slicedata, 'r') || croak("Can't create file handle for preprocessed data: $!");
@@ -175,13 +155,10 @@ sub ReadFile {
 		$reader = $input;
 	}
 	
-	#printf("Seeking to 0x%08x...\n", $location->{ChunkSuboffset});
 	$reader->seek($location->{ChunkSuboffset}, Fcntl::SEEK_CUR);
-	#print("Reading $location->{OriginalSize} bytes...\n");
 	($reader->read($buffer, $location->{OriginalSize}) >= $location->{OriginalSize}) || croak("Can't uncompress file: $!");
 	
 	if ($location->{Flags}->{CallInstructionOptimized} || $location->{Flags}->{foCallInstructionOptimized}) {
-		#print("Transforming binary file...\n");
 		# We could just transform the whole data, but this will expose a flaw in the original algorithm:
 		# It doesn't detect jump instructions across block boundaries.
 		# This means we need to process block by block like the original.
@@ -191,9 +168,6 @@ sub ReadFile {
 		}
 	}
 	
-	#print hexdump($buffer);
-	
-	#print("Verifying checksum...\n");
 	($self->CheckFile($buffer, $location)) || croak("Invalid file checksum");
 	
 	return $buffer;

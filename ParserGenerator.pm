@@ -1,8 +1,8 @@
 use strict;
 use Switch 'Perl6';
 use Carp;
-use Data::Dumper;
-$Data::Dumper::Indent = 1;
+#use Data::Dumper;
+#$Data::Dumper::Indent = 1;
 
 sub ParserGenerator::unit::types {
 	my $self = shift;
