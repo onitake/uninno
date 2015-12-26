@@ -77,7 +77,7 @@ sub TSetupHeader {
 		CompressMethod => $self->ReadEnum([ 'cmStored', 'cmZip', 'cmBzip', 'cmLZMA' ]),
 		ArchitecturesAllowed => $self->ReadSet([ 'paUnknown', 'paX86', 'paX64', 'paIA64' ]),
 		ArchitecturesInstallIn64BitMode => $self->ReadSet([ 'paUnknown', 'paX86', 'paX64', 'paIA64' ]),
-		SignedUninstallerOrigSize => $self->LongWord(),
+		SignedUninstallerOrigSize => $self->ReadLongWord(),
 		SignedUninstallerHdrChecksum => $self->DWORD(),
 		DisableDirPage => $self->ReadEnum([ 'dpAuto', 'dpNo', 'dpYes' ]),
 		DisableProgramGroupPage => $self->ReadEnum([ 'dpAuto', 'dpNo', 'dpYes' ]),

@@ -99,7 +99,7 @@ our $GRAMMAR = <<'END_OF_SOURCE';
 	<real type identifier> ::= 'Real' | 'Single' | 'Double' | 'Extended' | 'Comp'
 	
 	<ordinal type> ::= <subrange type> bless => defer0 | <enumerated type> bless => defer0 | <ordinal type identifier> bless => defer0
-	<ordinal type identifier> ::= 'Integer' | 'ShortInt' | 'SmallInt' | 'Smallint' | 'LongInt' | 'Longint' | 'Byte' | 'Word' | 'Cardinal' | 'Boolean' | 'ByteBool' | 'WordBool' | 'LongBool' | 'Char' | 'AnsiChar' | 'WideChar' | 'Integer64'
+	<ordinal type identifier> ::= 'Integer' | 'ShortInt' | 'SmallInt' | 'Smallint' | 'LongInt' | 'Longint' | 'Byte' | 'Word' | 'Cardinal' | 'Boolean' | 'ByteBool' | 'WordBool' | 'LongBool' | 'Char' | 'AnsiChar' | 'WideChar' | 'Integer64' | 'LongWord'
 	
 	<enumerated type> ::= '(' <identifier list> ')' 
 	
