@@ -155,7 +155,9 @@ sub ReadFile {
 		$reader = $input;
 	}
 	
-	$reader->seek($location->{ChunkSuboffset}, Fcntl::SEEK_CUR);
+	# Pipe seeking seems to be utterly broken?
+	#$reader->seek($location->{ChunkSuboffset}, Fcntl::SEEK_CUR);
+	$reader->read($buffer, $location->{ChunkSuboffset});
 	($reader->read($buffer, $location->{OriginalSize}) >= $location->{OriginalSize}) || croak("Can't uncompress file: $!");
 	
 	if ($location->{Flags}->{CallInstructionOptimized} || $location->{Flags}->{foCallInstructionOptimized}) {
