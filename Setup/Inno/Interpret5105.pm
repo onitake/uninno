@@ -22,6 +22,12 @@ sub CheckFile {
 		# SHA-1 produces a byte string result
 		return $digest->digest() eq $location->{SHA1Sum};
 	}
+	if (defined($location->{MD5Sum})) {
+		my $digest = Digest->new('MD5');
+		$digest->add($data);
+		# MD5 produces a byte string result
+		return $digest->digest() eq $location->{MD5Sum};
+	}
 	return 1;
 }
 
