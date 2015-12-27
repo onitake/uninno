@@ -124,15 +124,14 @@ sub findovr {
 # Finds out which class overrides ParseOffsetTable, starting from Struct5200
 print(findovr('ParseOffsetTable', '5200') . "\n");
 
-Many of the data blocks use LZMA compression, but in a slightly non-standard
-format that IO::Uncompress::UnLzma doesn't understand. Due to this, a little
-trick is being used: Data is first copied out to a temporary file, which is
-then streamed through the command line xz program from xz-utils. Regular
-LZMA1 streams are prepended by a header containing the compression parameters,
-the dictionary size and a 64 bit length, which can be negative to signal an
-unknown stream size. The Inno Setup LZMA format starts with the same parameters,
-but leaves out the stream size. IO::Uncompress::UnLzma seems to be under
-development, so compatibility with raw streams is possible in the future.
+InnoSetup has used many different compression algorithms in the course of its
+history, with varying degrees of compatibility with standard software.
+zlib, bzip2, LZMA and LZMA2 compression are supported by uninno, using
+corresponding Perl modules. These are: IO::Uncompress::AnyInflate for zlib,
+IO::Uncompress::Bunzip2 for bzip2 and Compress::Raw::Lzma for LZMA and LZMA2.
+LZMA compression uses a lot of memory currently and performance is poor, as
+the API of Compress::Raw::Lzma is very low-level and hard to use in a
+straight-forward way.
 
 Starting with support for InnoSetup 5.5.0, a new approach is used to create the
 various structure parsers. Using a custom Delphi grammar based on an old edition
@@ -166,14 +165,13 @@ Optionally, you may also import the older sources, if you want to generate
 a parser before IS 5.4.3. Use makeissrc.pl to automate this task.
 
 As an example of makestruct usage, run:
-makestruct.pl
-	--src /path/to/innosetup
-	--version 5.5.0u
-	--base Setup::Inno::Struct5309
-specifying the source code path, the version number (u at the end signifies
-a Unicode version) and the base class you want to use.
+makestruct.pl --src /path/to/innosetup --version 5.5.0u
+specifying the source code path and the version number. The u at the end
+signals that strings are to be interepreted.
 Output will go to Struct5500u.pm in this case, which needs to be put into
 Setup/Inno/ to make Inno.pm find it.
+It is recommended to always create a Unicode and a non-Unicode version when
+generating a parser for a new version.
 
 
 5. Links
