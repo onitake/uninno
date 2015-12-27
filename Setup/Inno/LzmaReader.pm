@@ -3,9 +3,9 @@
 package Setup::Inno::LzmaReader;
 
 use strict;
+require 5.006_000;
 use Carp;
 use Compress::Raw::Lzma;
-use IO::Scalar;
 
 our $CHUNK_SIZE = 4096;
 
@@ -58,13 +58,14 @@ sub new {
 		croak("Error uncompressing data: " . $status);
 	}
 	
-	return IO::Scalar->new(\$uncompressed);
+	return IO::File->new(\$uncompressed, 'r') || croak("Can't create file handle for uncompressed data: $!");
 }
 
 
 package Setup::Inno::Lzma2Reader;
 
 use strict;
+require 5.006_000;
 use Carp;
 use Compress::Raw::Lzma;
 use IO::Scalar;
@@ -126,7 +127,7 @@ sub new {
 		croak("Error uncompressing data: " . $status);
 	}
 	
-	return IO::Scalar->new(\$uncompressed);
+	return IO::File->new(\$uncompressed, 'r') || croak("Can't create file handle for uncompressed data: $!");
 }
 
 
