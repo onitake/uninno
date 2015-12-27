@@ -7,7 +7,7 @@ my $git = 'git';
 my $unzip = 'unzip';
 my $wget = 'wget';
 my $srcdir = 'innosetup';
-my $giturl = 'git://github.com/jrsoftware/issrc.git'
+my $giturl = 'git://github.com/jrsoftware/issrc.git';
 my $firstcommit = '238b7749629c219c25716a5f04a66fb9dfa5feb2';
 my $branch = 'old';
 my @sources = qw(
@@ -87,6 +87,7 @@ sub tag {
 	system("$unzip $zip");
 	system("$git add .");
 	system("$git commit -m '$msg'");
+	print("The error about the missing tag can be ignored.\n");
 	system("$git tag -d $tag");
 	system("$git tag $tag");
 }
@@ -99,7 +100,7 @@ system("$git checkout $firstcommit");
 system("$git checkout -b $branch");
 
 for my $url (@sources) {
-	my ($zipfile, $major, $minor, $micro) = ($zipfile =~ /(issrc-([0-9])\.([0-9])\.([0-9]{1,2})(-beta)?\.zip)/);
+	my ($zipfile, $major, $minor, $micro) = ($url =~ /(issrc-([0-9])\.([0-9])\.([0-9]{1,2})(-beta)?\.zip)/);
 	tag("../$zipfile", "$major.$minor.$micro", "is-$major\_$minor\_$micro");
 }
 
