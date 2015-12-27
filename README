@@ -135,43 +135,30 @@ straight-forward way.
 
 Starting with support for InnoSetup 5.5.0, a new approach is used to create the
 various structure parsers. Using a custom Delphi grammar based on an old edition
-of the Delphi Language Guide, Projects/Struct.pas is processed and dissected.
-Then, a Perl module is generated that can parse binary data represented by the
-data structures in that file. The grammar can be found in DelphiGrammar.pm,
-the code for the generator in ParserGenerator.pm.
-
-Newer editions of the guide didn't include any formal grammar; it is also
-incomplete and in some parts erroneous. Careful simplification and testing was
-undertaken to make the grammar successfully parse all versions of Struct.pas.
+of the Delphi Language Guide, Projects/Struct.pas from the InnoSetup sourc code
+is processed and dissected. Then, a Perl module is generated that can parse
+binary data represented by the data structures in that file. The grammar can be
+found in DelphiGrammar.pm, the code for the generator in ParserGenerator.pm.
 
 To generate a new parser, you need to install Marpa::R2. You also need the
 specific InnoSetup Struct.pas you'd like to implement support for.
+The makeissrc.pl utility can clone out the official git repository for you and
+optionally patch in older versions from their respective source files. It will
+put the repository into ./innosetup by default.
+
+The makestruct.pl tool can then be used to access this repository to generate
+new parsers for a specific InnoSetup version.
+
 Run:
-makeparser.pl
-	--input /path/to/innosetup/Projects/Struct.pas
-	--output StructParser.pm
-	--unicode
-	--type TSetupHeader --type TSetupLanguageEntry
-	--type TSetupCustomMessageEntry --type TSetupPermissionEntry
-	--type TSetupTypeEntry --type TSetupComponentEntry --type TSetupTaskEntry
-	--type TSetupDirEntry --type TSetupFileEntry --type TSetupIconEntry
-	--type TSetupIniEntry --type TSetupRegistryEntry --type TSetupDeleteEntry
-	--type TSetupRunEntry --type TSetupFileLocationEntry
-This will just generate the raw parser routines.
-
-Complete parser class generation can also be simplified by using makestruct.pl.
-Note that you need to clone the InnoSetup git repository first.
-Optionally, you may also import the older sources, if you want to generate
-a parser before IS 5.4.3. Use makeissrc.pl to automate this task.
-
-As an example of makestruct usage, run:
 makestruct.pl --src /path/to/innosetup --version 5.5.0u
-specifying the source code path and the version number. The u at the end
-signals that strings are to be interepreted.
+
+specifying the source code path and the version number.
+Versions with a u at the end are Unicode versions, which means that all strings
+are interpreted as UTF-16. Non-Unicode installers have their strings stored
+using Windows code page 1252. It is recommended to always create a Unicode and
+a non-Unicode version when generating a parser for a new version.
 Output will go to Struct5500u.pm in this case, which needs to be put into
 Setup/Inno/ to make Inno.pm find it.
-It is recommended to always create a Unicode and a non-Unicode version when
-generating a parser for a new version.
 
 
 5. Links
