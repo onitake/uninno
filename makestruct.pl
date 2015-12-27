@@ -6,9 +6,8 @@ use Getopt::Long;
 use ParserGenerator;
 use DelphiGrammar;
 
-my ($help, $parser, $git, $issrc, $version, $base, $stdtypes) = (undef, './makeparser.pl', 'git', undef, undef, 'Setup::Inno::Struct', 0);
+my ($help, $git, $issrc, $version, $base, $stdtypes) = (undef, 'git', undef, undef, 'Setup::Inno::Struct', 0);
 GetOptions(
-	"parser=s" => \$parser,
 	"git=s" => \$git,
 	"src=s" => \$issrc,
 	"version=s" => \$version,
@@ -20,7 +19,6 @@ if ($help || !defined($issrc) || !defined($version)) {
 	print STDERR "Usage: makestruct.pl --src <issrc> --version <1.2.3[u]> [--parser <makeparser.pl>] [--git <git>] [--base <class>] [--help]\n";
 	print STDERR "       issrc      the path to a clone of the innosetup source repository\n";
 	print STDERR "       version    the version number to check out prior to parsing (with u suffix for unicode mode)\n";
-	print STDERR "       parser     the path to the parser script (default: $parser)\n";
 	print STDERR "       git        the path to the git program (default: $git)\n";
 	print STDERR "       base       the name of the base class (default to $base)\n";
 	print STDERR "       stdtypes   add parsers for some standard Delphi types (like HKEY or DWORD)\n";
