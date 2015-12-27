@@ -13,6 +13,9 @@ use File::Spec::Functions;
 
 $Text::Glob::strict_wildcard_slash = 0;
 
+# Enable autoflush on stdout
+$| = 1;
+
 my ($mode, $outdir, $strip, $help, $overwriteall) = ('extract', 'app', 0, 0, 0);
 GetOptions(
 	"h" => \$help,
