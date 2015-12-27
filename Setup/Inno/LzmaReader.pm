@@ -4,6 +4,10 @@ package Setup::Inno::LzmaReader;
 
 use strict;
 use Carp;
+use Compress::Raw::Lzma;
+use IO::Scalar;
+
+our $CHUNK_SIZE = 4096;
 
 sub new {
 	my ($class, $reader, $size, $arch) = @_;
@@ -30,48 +34,31 @@ sub new {
 	my $data;
 	if (defined($size)) {
 		# Subtract header first
-		$size -= 1;
+		$size -= 5;
 		# Consume as much as we're allowed to
 		my $rdbytes = $reader->read($data, $size);
 		($rdbytes == $size) || croak("Didn't get all data from stream (expected $size, got $rdbytes)");
 	} else {
 		# Consume everything the input gives us
 		while (!$reader->eof()) {
-			$reader->read(my $buffer, 4096) || croak("Can't read from stream");
+			$reader->read(my $buffer, $CHUNK_SIZE) || croak("Can't read from stream");
 			$data .= $buffer;
 		}
 	}
 	
-	# Spawn a subprocess to feed the data to xz
-	my $pid = open(my $pipe, "-|");
-	if (!defined($pid)) {
-		croak("Can't fork streamer");
-	} elsif ($pid == 0) {
-		local $SIG{PIPE} = sub {
-			#print(STDERR "Exiting due to SIGPIPE\n");
-			exit(1);
-		};
-		my $uncomppid = open(my $funnel, "|-");
-		if (!defined($uncomppid)) {
-			print(STDERR "Can't fork unpacker\n");
-			exit(2);
-		} elsif ($uncomppid == 0) {
-			if (!exec("xz --stdout --decompress --format=raw --lzma1=lc=$lc,lp=$lp,pb=$pb,dict=$dictsize $transform")) {
-				print(STDERR "Can't execute xz utility\n");
-				exit(5);
-			}
-		}
-		
-		# Write the whole buffer into the pipe
-		$funnel->write($data);
-		
-		# Close and wait for completion
-		$funnel->close();
-		waitpid($uncomppid, 0) if defined($uncomppid);
-		exit(0);
+	# Create a buffer decoder
+	my ($decoder, $status) = Compress::Raw::Lzma::RawDecoder->new(Filter => [Lzma::Filter::Lzma1(DictSize => $dictsize, Lc => $lc, Lp => $lp, Pb => $pb)]);
+	if (!defined($decoder)) {
+		croak("Can't create LZMA decoder: " . $status);
 	}
-
-	return $pipe;
+	
+	# Uncompress data into memory
+	$status = $decoder->code($data, my $uncompressed);
+	if ($status != LZMA_OK && $status != LZMA_STREAM_END) {
+		croak("Error uncompressing data: " . $status);
+	}
+	
+	return IO::Scalar->new(\$uncompressed);
 }
 
 
@@ -79,6 +66,10 @@ package Setup::Inno::Lzma2Reader;
 
 use strict;
 use Carp;
+use Compress::Raw::Lzma;
+use IO::Scalar;
+
+our $CHUNK_SIZE = 4096;
 
 sub new {
 	my ($class, $reader, $size, $arch) = @_;
@@ -118,41 +109,24 @@ sub new {
 	} else {
 		# Consume everything the input gives us
 		while (!$reader->eof()) {
-			$reader->read(my $buffer, 4096) || croak("Can't read from stream");
+			$reader->read(my $buffer, $CHUNK_SIZE) || croak("Can't read from stream");
 			$data .= $buffer;
 		}
 	}
 	
-	# Spawn a subprocess to feed the data to xz
-	my $pid = open(my $pipe, "-|");
-	if (!defined($pid)) {
-		croak("Can't fork streamer");
-	} elsif ($pid == 0) {
-		local $SIG{PIPE} = sub {
-			#print(STDERR "Exiting due to SIGPIPE\n");
-			exit(1);
-		};
-		my $uncomppid = open(my $funnel, "|-");
-		if (!defined($uncomppid)) {
-			print(STDERR "Can't fork unpacker\n");
-			exit(2);
-		} elsif ($uncomppid == 0) {
-			if (!exec("xz --stdout --decompress --format=raw --lzma2=dict=$dictsize $transform")) {
-				print(STDERR "Can't execute xz utility\n");
-				exit(5);
-			}
-		}
-		
-		# Write the whole buffer into the pipe
-		$funnel->write($data);
-		
-		# Close and wait for completion
-		$funnel->close();
-		waitpid($uncomppid, 0) if defined($uncomppid);
-		exit(0);
+	# Create a buffer decoder
+	my ($decoder, $status) = Compress::Raw::Lzma::RawDecoder->new(Filter => [Lzma::Filter::Lzma2(DictSize => $dictsize)]);
+	if (!defined($decoder)) {
+		croak("Can't create LZMA2 decoder: " . $status);
 	}
-
-	return $pipe;
+	
+	# Uncompress data into memory
+	$status = $decoder->code($data, my $uncompressed);
+	if ($status != LZMA_OK && $status != LZMA_STREAM_END) {
+		croak("Error uncompressing data: " . $status);
+	}
+	
+	return IO::Scalar->new(\$uncompressed);
 }
 
 
