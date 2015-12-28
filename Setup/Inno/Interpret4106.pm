@@ -8,15 +8,6 @@ use Fcntl;
 use Setup::Inno::BlockReader;
 use Setup::Inno::FieldReader;
 
-=comment
-  TSetupLdrOffsetTable = packed record
-    ID: array[1..12] of Char;
-    TotalSize,
-    OffsetEXE, UncompressedSizeEXE, CRCEXE,
-    Offset0, Offset1: Longint;
-    TableCRC: Longint;  { CRC of all prior fields in this record }
-  end;
-=cut
 sub OffsetTableSize {
 	return 40;
 }

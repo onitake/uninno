@@ -7,14 +7,6 @@ use base qw(Setup::Inno::Interpret4000);
 use Digest;
 use Win::Exe::Util;
 
-=comment
-  TSetupLdrOffsetTable = packed record
-    ID: array[1..12] of Char;
-    TotalSize,
-    OffsetEXE, CompressedSizeEXE, UncompressedSizeEXE, CRCEXE,
-    Offset0, Offset1: Longint;
-  end;
-=cut
 sub OffsetTableSize {
 	return 40;
 }
