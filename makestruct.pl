@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 
 use strict;
+use FindBin;
+use lib "$FindBin::Bin";
 use Cwd;
 use Getopt::Long;
 use ParserGenerator;

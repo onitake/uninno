@@ -3,6 +3,8 @@
 use strict;
 use warnings;
 use diagnostics;
+use FindBin;
+use lib "$FindBin::Bin";
 use Setup::Inno;
 use Getopt::Long;
 use Text::Glob 'glob_to_regex';
