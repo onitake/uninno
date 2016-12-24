@@ -14,28 +14,26 @@
 
 uninno is a portable unpacking tool for Inno Setup (IS) installers.
 
-Inno Setup is a popular tool for creating software package installers for the
-Microsoft Windows operating system. It was written in Delphi by Jordan Russell,
-Martijn Laan and others. It is available under an open source licence.
+It was originally conceived as a means to extract the data files from
+GoG (Good old Games) installer packages. Back then, these games were
+usually only for offered for the Microsoft Windows operating system.
+This was a bit disappointing, because there existed alternative means
+of playing these games on other platforms. Unfortunately, there was no
+easy way to obtain the contents of these packages, so the author started
+writing a new tool in a portable script language, Perl.
 
-This tool was originally conceived as a means to extract the data files from
-GoG (Good old Games) installer packages, as obtained legally from their
-web site (www.gog.com). Back at the time, many of these games had ports or
-alternative runtimes for platforms not officially supported by GoG.
-To make the games work, an extraction tool was needed, and the result of this
-is uninno.
+After initial success, uninno also became a bit of a research project
+for studying computer language parsing and automatic code generation.
 
-Later on, uninno became a small research project for studying computer language
-parsing and automatic code generation.
-
-It will still be updated occasionally.
+It will still be updated occasionally, when new Inno Setup versions are
+released.
 
 
 2. Copyright
 
 uninno and all its components are
 
-Copyright (C) 2012-2015 by Gregor Riepl <onitake@gmail.com>
+Copyright (C) 2012-2016 by Gregor Riepl <onitake@gmail.com>
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -59,12 +57,11 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-The data extraction routines were generated based on the Inno Setup source code,
-while the rest of the software was written from scratch.
+The data extraction routines are generated based on the Inno Setup source code,
+while the rest of the software was developed independently.
 See http://www.jrsoftware.org/files/is/license.txt for the Inno Setup license.
 
-Neither the author not uninno are affiliated with Inno Setup or its developers
-in any way.
+No part of the project is affiliated with Inno Setup or its authors.
 
 
 3. Usage
@@ -86,9 +83,13 @@ These are:
  IO::Uncompress::AnyInflate
  IO::Uncompress::Bunzip2
  Compress::Raw::Lzma
+ 
+On Debian/Ubuntu Linux, use the following command to install all dependencies:
+ 
+$ sudo apt install libswitch-perl libdatetime-perl libdigest-crc-perl libcompress-raw-lzma-perl
 
 
-4. Development
+4. Code
 
 uninno consists of a bunch of Perl packages that handle different stages of the
 analysis and extractiong process. Dissection of the installer executable is
@@ -97,11 +98,11 @@ Setup::Inno provides a frontend for parsing the setup.0 (metadata) and setup.1
 (compressed files) parts of the Inno Setup installer.
 
 To improve code reuse and facilitate handling of all the installer versions,
-all version-specific code is represented in a (linear) class hierarchy, spanning
-from a base class with simple code stubs over the first open source Inno Setup
-release (2.0.8) up to the most recent version. Each class in the hierarchy has
-override points that implement headers, decompression and custom
-handling required for this version or its descendants.
+all version-specific code is represented by a class hierarchy, starting with
+a base class containing mostly stubs, continuing with support for the first
+open source Inno Setup release (2.0.8), and going up to the most recent version.
+Each class in the hierarchy has override points that implement headers,
+decompression and custom handling required for this version or its descendants.
 
 Secondary to that is a set of data structure parsers for each exact Inno Setup
 version. These can be generated from the Inno source code, as outlined below.
@@ -115,33 +116,35 @@ zlib, bzip2, LZMA and LZMA2 compression are supported by uninno, using
 corresponding Perl modules.
 LZMA compression uses a lot of memory currently and performance is poor, as
 the API of Compress::Raw::Lzma is very low-level and hard to use in a
-straight-forward way. A better implementation is being worked on.
+straight-forward way. A better implementation may be written in the future.
 
 Starting with support for Inno Setup 5.5.0, a new approach is used to create the
 various structure parsers. Using a custom Delphi grammar based on an old edition
 of the Delphi Language Guide, Projects/Struct.pas from the Inno source code
 is processed and dissected. Then, a Perl module is generated that can parse
 binary data represented by the data structures in that file. The grammar can be
-found in DelphiGrammar.pm, the code for the generator in ParserGenerator.pm.
+found in DelphiGrammar.pm, the code for the generator is in ParserGenerator.pm.
 
 To generate a new parser, you need the Perl module Marpa::R2. You also need the
-specific Inno Setup Struct.pas you'd like to implement support for.
+specific Inno Setup Struct.pas you would like to implement support for.
 The makeissrc.pl utility can clone the official git repository for you and
 optionally download and patch in older versions from their respective source
 files. It will put the repository into ./innosetup by default.
-The tool will call the external wget, unzip and git utilities to its work.
+The tool needs the tools wget, unzip and git to do its work.
 
-The makestruct.pl tool can then be used to access this repository to generate
-new parsers for a specific Inno Setup version.
+makestruct.pl can then be used to access this repository and to generate a
+new parser for a specific Inno Setup version.
 
-Run:
-$ ./makestruct.pl --src /path/to/innosetup --version 5.5.0u
+For example:
+$ ./makestruct.pl --src ./innosetup --version 5.5.0u
 
-specifying the source code path and the version number.
 Versions with a u at the end are Unicode versions, which means that all strings
-are interpreted as UTF-16. Non-Unicode installers have their strings stored
-using Windows code page 1252. It is recommended to always create a Unicode and
-a non-Unicode version when generating a parser for a new version.
+are interpreted as UTF-16. Non-Unicode installers used to have their strings
+stored in Windows code page 1252, but more recent installer may also specify
+the used code page in the data structures. Support for this has not been
+implemented yet.
+It is recommended to always generate Unicode and non-Unicode versions
+when creating a parser for a new version.
 Output will go to Struct5500u.pm in this case, which needs to be put into
 Setup/Inno/ to make Inno.pm find it.
 
@@ -150,6 +153,5 @@ Setup/Inno/ to make Inno.pm find it.
 
 Inno Setup: http://www.jrsoftware.org/isinfo.php
 innounp: http://innounp.sourceforge.net/
-Good Old Games: http://www.gog.com (they sell DRM-free digital copies of vintage
-PC games, their installer is built with Inno Setup 5)
+Good Old Games: http://www.gog.com
 Object Pascal Language Guide for Delphi: http://tinyurl.com/nowcn6c
