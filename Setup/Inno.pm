@@ -193,7 +193,7 @@ sub FileInfo {
 	}
 	return {
 		Size => $location->{OriginalSize},
-		Date => $location->{TimeStamp},
+		Date => $location->{TimeStamp} || $location->{SourceTimeStamp},
 		Compressed => $location->{Flags}->{ChunkCompressed} || $location->{Flags}->{foChunkCompressed},
 		Encrypted => $location->{Flags}->{ChunkEncrypted} || $location->{Flags}->{foChunkEncrypted},
 		Type => $type,
