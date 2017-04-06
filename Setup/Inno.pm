@@ -3,6 +3,7 @@
 package Setup::Inno;
 
 use strict;
+use Data::Printer;
 use Switch 'Perl6';
 use Fcntl;
 use IO::File;
@@ -21,7 +22,7 @@ our $DefaultRegSvrExeName = "regsvr.exe";
 
 sub new {
 	my ($class, $filename) = @_;
-	
+
 	my $self = {
 		Input => IO::File->new($filename, '<'),
 	};
@@ -44,14 +45,14 @@ sub new {
 		$self->{Interpreter} = Setup::Inno::Interpret->new(substr($OffsetTable, 0, 12));
 		$self->{OffsetTable} = $self->{Interpreter}->ParseOffsetTable($OffsetTable);
 	};
-	
+
 	#print("Offset0 " . $self->Offset0() . "\n");
 	$self->{Input}->seek($self->Offset0(), Fcntl::SEEK_SET) || croak("Can't seek to setup.0 offset");
 	$self->{Input}->read(my $buffer, 64) || croak("Error reading setup ID");
 	$self->{TestID} = unpack('Z64', $buffer);
 	$self->{Interpreter}->ReBless($self->{TestID});
 	$self->{Filename} = $filename;
-	
+
 	return $self;
 }
 
@@ -124,7 +125,14 @@ sub FileLocations {
 		my $setup0 = $self->Setup0();
 		$self->{Input}->seek($setup0->{OffsetLocations}, Fcntl::SEEK_SET);
 		my $struct = $self->{Interpreter}->StructReader($self->{Input});
-		#while (1) { $self->{Input}->seek(0x01000000, Fcntl::SEEK_SET); }
+		print '$dynamic_25$';
+		my $h = unpack("H*", $setup0->{Header}->{PasswordHash});
+		print $h, '$HEX$';
+		print unpack("H*", "PasswordCheckHash");
+		for (my $i = 0; $i < 8; $i++) {  # JimF was here
+			print unpack("H*", chr($setup0->{Header}->{PasswordSalt}[$i]));
+		}
+		print "\n";
 		$self->{FileLocations} = $self->{Interpreter}->SetupFileLocations($struct, $setup0->{Header}->{NumFileLocationEntries});
 	}
 	return $self->{FileLocations};
