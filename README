@@ -86,7 +86,7 @@ These are:
  
 On Debian/Ubuntu Linux, use the following command to install all dependencies:
  
-$ sudo apt install libswitch-perl libdatetime-perl libdigest-crc-perl libcompress-raw-lzma-perl
+$ sudo apt install libswitch-perl libdatetime-perl libdigest-crc-perl libcompress-raw-lzma-perl libtext-glob-perl libio-stringy-perl xz-utils
 
 
 4. Code
