@@ -115,7 +115,8 @@ sub ReBless {
 	if ($verstr =~ /\(([0-9])\.([0-9])\.([0-9])([0-9])?([a-z])?\)(\s*\(([a-z])?\))?/) {
 		my $bareversion = "$1$2";
 		$bareversion .= defined($4) ? "$3$4" : "0$3";
-		my $version = $bareversion . ((defined($5) && $5 eq 'u') || (defined($7) && $7 eq 'u') ? 'u' : '');
+		$self->{IsUnicode} = ((defined($5) && $5 eq 'u') || (defined($7) && $7 eq 'u') ? 'u' : '');
+		my $version = $bareversion . $self->{IsUnicode};
 		$self->{Version} = $version;
 		my ($low, $high) = (0, $#{$InterpreterVersions});
 		my $found;
@@ -281,6 +282,14 @@ sub SetupRun {
 sub SetupFileLocations {
 	my ($self, $struct, $count) = @_;
 	return [ map { $struct->TSetupFileLocationEntry() } (0..$count - 1) ];
+}
+
+# Verifies that a supplied password is correct
+# Arguments:
+#   The Setup0 header
+#   The password
+sub VerifyPassword {
+	return 1;
 }
 
 1;

@@ -4,6 +4,7 @@ package Setup::Inno::Interpret5309;
 
 use strict;
 use base qw(Setup::Inno::Interpret5105);
+use Encode;
 
 sub TransformCallInstructions {
 	my ($self, $data, $offset) = @_;
@@ -49,6 +50,23 @@ sub TransformCallInstructions {
 		}
 	}
 	return $data;
+}
+
+sub VerifyPassword {
+	my ($self, $setup0, $password) = @_;
+	if ($setup0->{Options}->{shPassword}) {
+		my $digest = Digest->new('SHA-1');
+		$digest->add('PasswordCheckHash');
+		$digest->add(join('', @{$setup0->{PasswordSalt}}));
+		if ($self->{IsUnicode}) {
+			$digest->add(encode('UTF-16LE', $password));
+		} else {
+			$digest->add($password);
+		}
+		return $digest->digest() eq $setup0->{PasswordHash};
+	} else {
+		return !defined($password);
+	}
 }
 
 1;

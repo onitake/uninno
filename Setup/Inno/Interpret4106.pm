@@ -5,6 +5,7 @@ package Setup::Inno::Interpret4106;
 use strict;
 use base qw(Setup::Inno::Interpret4010);
 use Fcntl;
+use Encode;
 use Setup::Inno::BlockReader;
 use Setup::Inno::FieldReader;
 
@@ -30,6 +31,33 @@ sub FieldReader {
 	my $creader = Setup::Inno::BlockReader->new($reader, $offset, 4096) || die("Can't create block reader");
 	my $freader = Setup::Inno::FieldReader->new($creader) || die("Can't create field reader");
 	return $freader;
+}
+
+sub VerifyPassword {
+	my ($self, $setup0, $password) = @_;
+	if (defined($setup0->{Options}->{shPassword})) {
+		if ($setup0->{Options}->{shPassword}) {
+			my $digest = Digest->new('MD5');
+			my $hash;
+			if (defined($setup0->{PasswordHash})) {
+				$hash = $setup0->{PasswordHash};
+				$digest->add('PasswordCheckHash');
+				$digest->add(join('', @{$setup0->{PasswordSalt}}));
+			} else {
+				$hash = $setup0->{Password};
+			}
+			if ($self->{IsUnicode}) {
+				$digest->add(encode('UTF-16LE', $password));
+			} else {
+				$digest->add($password);
+			}
+			return $digest->digest() eq $hash;
+		} else {
+			return !defined($password);
+		}
+	} else {
+		return 1;
+	}
 }
 
 1;

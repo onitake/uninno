@@ -77,5 +77,16 @@ sub ReadFile {
 	return $buffer;
 }
 
+sub VerifyPassword {
+	my ($self, $setup0, $password) = @_;
+	if ($setup0->{Options}->{shPassword}) {
+		my $digest = Digest->new('CRC-32');
+		$digest->add($password);
+		return $digest->digest() == $setup0->{Password};
+	} else {
+		return !defined($password);
+	}
+}
+
 1;
 

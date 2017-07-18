@@ -18,13 +18,14 @@ $Text::Glob::strict_wildcard_slash = 0;
 # Enable autoflush on stdout
 $| = 1;
 
-my ($mode, $outdir, $strip, $help, $overwriteall) = ('extract', 'app', 0, 0, 0);
+my ($mode, $outdir, $strip, $help, $overwriteall, $password) = ('extract', 'app', 0, 0, 0, undef);
 GetOptions(
 	"h" => \$help,
 	"l" => sub { $mode = 'list' },
 	"e" => sub { $mode = 'extract'; $strip = 0 },
 	"x" => sub { $mode = 'extract'; $strip = 1 },
 	"d=s" => \$outdir,
+	"p=s" => \$password,
 );
 if ($help || @ARGV < 1) {
 	print(STDERR "Usage: extract.pl [-l | -e | -x] [-h] [-d path] setup.exe [file.ext] [file.*] ...\n");
@@ -36,6 +37,7 @@ if ($help || @ARGV < 1) {
 	print(STDERR "-e  Extract files with full (relative) path (default action)\n");
 	print(STDERR "-x  Extract files with stripped path\n");
 	print(STDERR "-d  Specify output path (default: ./app/)\n");
+	print(STDERR "-p  Specify the decryption password\n");
 	exit(1);
 }
 
@@ -55,45 +57,49 @@ if ($mode eq 'list') {
 		}
 	}
 } elsif ($mode eq 'extract') {
-	for my $i (map({ $inno->FindFiles($_) } @patterns)) {
-		my $file = $inno->FileInfo($i);
-		if ($file->{Type} eq 'App') {
-			eval {
-				printf("%u: %s %s %u %s %s%s...", $i, $file->{Name}, $file->{Type}, $file->{Size}, $file->{Date}->format_cldr('yyyy-MM-dd HH:mm:ss'), $file->{Compressed} ? 'C' : '', $file->{Encrypted} ? 'E' : '');
-				my $name = $file->{Name};
-				if ($strip) {
-					$name =~ s#^.*?([^/]+)$#$1#;
-				} else {
-					$name =~ s#^[./]*##;
-				}
-				$name = catfile($outdir, $name);
-				my $path = dirname($name);
-				if (!stat($path)) {
-					make_path($path);
-				}
-				my $writeone = $overwriteall;
-				if (stat($name) && !$writeone) {
-					print(" $name exists. Overwrite? [y/N/a]");
-					my $response = <STDIN>;
-					if ($response =~ /^[yY]/) {
-						$writeone = 1;
-					} elsif ($response =~ /^[aA]/) {
-						$writeone = 1;
-						$overwriteall = 1;
+	if (!$inno->VerifyPassword($password)) {
+		print("Invalid password specified.\n");
+	} else {
+		for my $i (map({ $inno->FindFiles($_) } @patterns)) {
+			my $file = $inno->FileInfo($i);
+			if ($file->{Type} eq 'App') {
+				eval {
+					printf("%u: %s %s %u %s %s%s...", $i, $file->{Name}, $file->{Type}, $file->{Size}, $file->{Date}->format_cldr('yyyy-MM-dd HH:mm:ss'), $file->{Compressed} ? 'C' : '', $file->{Encrypted} ? 'E' : '');
+					my $name = $file->{Name};
+					if ($strip) {
+						$name =~ s#^.*?([^/]+)$#$1#;
+					} else {
+						$name =~ s#^[./]*##;
 					}
-				} else {
-					$writeone = 1;
+					$name = catfile($outdir, $name);
+					my $path = dirname($name);
+					if (!stat($path)) {
+						make_path($path);
+					}
+					my $writeone = $overwriteall;
+					if (stat($name) && !$writeone) {
+						print(" $name exists. Overwrite? [y/N/a]");
+						my $response = <STDIN>;
+						if ($response =~ /^[yY]/) {
+							$writeone = 1;
+						} elsif ($response =~ /^[aA]/) {
+							$writeone = 1;
+							$overwriteall = 1;
+						}
+					} else {
+						$writeone = 1;
+					}
+					if ($writeone) {
+						my $data = $inno->ReadFile($i, $password);
+						my $output = IO::File->new($name, 'w') || die("Can't create $name: $@");
+						print($output $data);
+						print("done\n");
+					} else {
+						print("ignored\n");
+					}
+				} or do {
+					print("ERROR: $@");
 				}
-				if ($writeone) {
-					my $data = $inno->ReadFile($i);
-					my $output = IO::File->new($name, 'w') || die("Can't create $name: $@");
-					print($output $data);
-					print("done\n");
-				} else {
-					print("ignored\n");
-				}
-			} or do {
-				print("ERROR: $@");
 			}
 		}
 	}

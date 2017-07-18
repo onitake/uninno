@@ -233,5 +233,10 @@ sub FindFiles {
 	return @ret;
 }
 
+sub VerifyPassword {
+	my ($self, $password) = @_;
+	return $self->{Interpreter}->VerifyPassword($self->Setup0(), $password);
+}
+
 1;
 
