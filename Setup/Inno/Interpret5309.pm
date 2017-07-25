@@ -55,6 +55,9 @@ sub TransformCallInstructions {
 sub VerifyPassword {
 	my ($self, $setup0, $password) = @_;
 	if ($setup0->{Header}->{Options}->{shPassword}) {
+		if (!defined($password)) {
+			return 0
+		}
 		my $digest = Digest->new('SHA-1');
 		$digest->add('PasswordCheckHash');
 		$digest->add(join('', map(chr, @{$setup0->{Header}->{PasswordSalt}})));

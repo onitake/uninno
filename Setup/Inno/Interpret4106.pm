@@ -37,6 +37,9 @@ sub VerifyPassword {
 	my ($self, $setup0, $password) = @_;
 	if (defined($setup0->{Header}->{Options}->{shPassword})) {
 		if ($setup0->{Header}->{Options}->{shPassword}) {
+			if (!defined($password)) {
+				return 0
+			}
 			my $digest = Digest->new('MD5');
 			my $hash;
 			if (defined($setup0->{Header}->{PasswordHash})) {
