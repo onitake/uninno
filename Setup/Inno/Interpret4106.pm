@@ -42,7 +42,7 @@ sub VerifyPassword {
 			if (defined($setup0->{Header}->{PasswordHash})) {
 				$hash = $setup0->{Header}->{PasswordHash};
 				$digest->add('PasswordCheckHash');
-				$digest->add(join('', @{$setup0->{Header}->{PasswordSalt}}));
+				$digest->add(join('', map(chr, @{$setup0->{Header}->{PasswordSalt}})));
 			} else {
 				$hash = $setup0->{Header}->{Password};
 			}

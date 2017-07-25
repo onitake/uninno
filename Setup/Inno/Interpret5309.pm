@@ -57,7 +57,7 @@ sub VerifyPassword {
 	if ($setup0->{Header}->{Options}->{shPassword}) {
 		my $digest = Digest->new('SHA-1');
 		$digest->add('PasswordCheckHash');
-		$digest->add(join('', @{$setup0->{Header}->{PasswordSalt}}));
+		$digest->add(join('', map(chr, @{$setup0->{Header}->{PasswordSalt}})));
 		if ($self->{IsUnicode}) {
 			$digest->add(encode('UTF-16LE', $password));
 		} else {
