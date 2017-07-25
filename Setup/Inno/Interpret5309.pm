@@ -54,16 +54,16 @@ sub TransformCallInstructions {
 
 sub VerifyPassword {
 	my ($self, $setup0, $password) = @_;
-	if ($setup0->{Options}->{shPassword}) {
+	if ($setup0->{Header}->{Options}->{shPassword}) {
 		my $digest = Digest->new('SHA-1');
 		$digest->add('PasswordCheckHash');
-		$digest->add(join('', @{$setup0->{PasswordSalt}}));
+		$digest->add(join('', @{$setup0->{Header}->{PasswordSalt}}));
 		if ($self->{IsUnicode}) {
 			$digest->add(encode('UTF-16LE', $password));
 		} else {
 			$digest->add($password);
 		}
-		return $digest->digest() eq $setup0->{PasswordHash};
+		return $digest->digest() eq $setup0->{Header}->{PasswordHash};
 	} else {
 		return !defined($password);
 	}

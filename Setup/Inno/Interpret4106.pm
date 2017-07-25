@@ -35,16 +35,16 @@ sub FieldReader {
 
 sub VerifyPassword {
 	my ($self, $setup0, $password) = @_;
-	if (defined($setup0->{Options}->{shPassword})) {
-		if ($setup0->{Options}->{shPassword}) {
+	if (defined($setup0->{Header}->{Options}->{shPassword})) {
+		if ($setup0->{Header}->{Options}->{shPassword}) {
 			my $digest = Digest->new('MD5');
 			my $hash;
-			if (defined($setup0->{PasswordHash})) {
-				$hash = $setup0->{PasswordHash};
+			if (defined($setup0->{Header}->{PasswordHash})) {
+				$hash = $setup0->{Header}->{PasswordHash};
 				$digest->add('PasswordCheckHash');
-				$digest->add(join('', @{$setup0->{PasswordSalt}}));
+				$digest->add(join('', @{$setup0->{Header}->{PasswordSalt}}));
 			} else {
-				$hash = $setup0->{Password};
+				$hash = $setup0->{Header}->{Password};
 			}
 			if ($self->{IsUnicode}) {
 				$digest->add(encode('UTF-16LE', $password));
