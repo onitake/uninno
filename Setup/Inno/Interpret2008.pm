@@ -7,6 +7,7 @@ use base qw(Setup::Inno::Interpret);
 use Switch 'Perl6';
 use Fcntl;
 use Digest;
+use Encode;
 use IO::Uncompress::AnyInflate;
 use IO::Uncompress::Bunzip2;
 use Win::Exe::Util;
@@ -84,7 +85,7 @@ sub VerifyPassword {
 			return 0
 		}
 		my $digest = Digest->new('CRC-32');
-		$digest->add($password);
+		$digest->add(encode('cp1252', $password));
 		return $digest->digest() == $setup0->{Header}->{Password};
 	} else {
 		return !defined($password);

@@ -64,7 +64,7 @@ sub VerifyPassword {
 		if ($self->{IsUnicode}) {
 			$digest->add(encode('UTF-16LE', $password));
 		} else {
-			$digest->add($password);
+			$digest->add(encode('cp1252', $password));
 		}
 		return $digest->digest() eq $setup0->{Header}->{PasswordHash};
 	} else {
