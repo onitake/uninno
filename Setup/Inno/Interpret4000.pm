@@ -14,6 +14,7 @@ use IO::Uncompress::Bunzip2;
 use File::Basename;
 use Setup::Inno::LzmaReader;
 use Digest;
+use Crypt::RC4;
 
 our $ZLIBID = "zlb\x{1a}";
 our $DISKSLICEID = "idska32\x{1a}";
@@ -106,10 +107,10 @@ sub ReadFile {
 	} else {
 		# No, create a new reader
 		
-		# Note: once we support decryption, make sure the password is interpreted as UTF-16LE (why?)
+		my $encrypted = 0;
 		if ($location->{Flags}->{ChunkEncrypted} || $location->{Flags}->{foChunkEncrypted}) {
 			!defined($password) && croak("File is encrypted, but no password was given");
-			croak("Encryption is not supported yet");
+			$encrypted = 1;
 		}
 		
 		my $buffer;
@@ -117,11 +118,15 @@ sub ReadFile {
 		if (@slices > 1) {
 			my $i = 0;
 			my $size = $location->{ChunkCompressedSize} + 4;
+			if ($encrypted) {
+				# 8 is the salt length
+				$size += 8;
+			}
 			my $offset = $offset1 + $location->{StartOffset} - $slices[$i]->{SliceOffset};
 			my $available = $slices[$i]->{Size} - $offset;
 			my $slicesize = $available < $size ? $available : $size;
-			$slices[$i]->{Input}->seek($offset, Fcntl::SEEK_SET);
-			$slices[$i]->{Input}->read($buffer, $slicesize);
+			$slices[$i]->{Input}->seek($offset, Fcntl::SEEK_SET) || croak("Can't seek to slice offset: $!");
+			$slices[$i]->{Input}->read($buffer, $slicesize) || croak("Can't read slice: $!");
 			my $slicedata = $buffer;
 			$size -= $slicesize;
 			$i++;
@@ -129,8 +134,8 @@ sub ReadFile {
 				$offset = $slices[$i]->{DataOffset};
 				$available = $slices[$i]->{Size};
 				$slicesize = $available < $size ? $available : $size;
-				$slices[$i]->{Input}->seek($offset, Fcntl::SEEK_SET);
-				$slices[$i]->{Input}->read($buffer, $slicesize);
+				$slices[$i]->{Input}->seek($offset, Fcntl::SEEK_SET) || croak("Can't seek to slice offset: $!");
+				$slices[$i]->{Input}->read($buffer, $slicesize) || croak("Can't read slice: $!");
 				$slicedata .= $buffer;
 				$size -= $slicesize;
 				$i++;
@@ -144,7 +149,25 @@ sub ReadFile {
 		
 		$input->read($buffer, 4) || croak("Can't read compressed block magic: $!");
 		($buffer eq $ZLIBID) || croak("Compressed block ID invalid");
-
+		if ($encrypted) {
+			# encrypted chunks start with a salt
+			$input->read(my $salt, 8) || croak("Can't read encrypted salt: $!");
+			# combined with the password, this gives us the cipher key
+			my $digest = Digest->new('SHA-1');
+			$digest->add($salt);
+			if ($self->{IsUnicode}) {
+				$digest->add(encode('UTF-16LE', $password));
+			} else {
+				$digest->add(encode('cp1252', $password));
+			}
+			my $key = $digest->digest();
+			my $rc4 = Crypt::RC4->new($key);
+			# TODO this is kinda redundant... and a waste of heap space.
+			$input->read(my $encrypted, $location->{ChunkCompressedSize}) || croak("Can't read encrypted data: $!");
+			my $decrypted = $rc4->RC4($encrypted);
+			$input = IO::File->new(\$decrypted, 'r') || croak("Can't create file handle for decrypted data: $!");
+		}
+		
 		my $reader;
 		if ($location->{Flags}->{ChunkCompressed} || $location->{Flags}->{foChunkCompressed}) {
 			given ($self->Compression1($header)) {
