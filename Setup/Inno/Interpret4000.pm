@@ -8,12 +8,13 @@ use base qw(Setup::Inno::Interpret2008);
 use Switch 'Perl6';
 use Carp;
 use Fcntl;
+use Digest;
+use Encode;
 use IO::File;
 use IO::Uncompress::AnyInflate;
 use IO::Uncompress::Bunzip2;
 use File::Basename;
 use Setup::Inno::LzmaReader;
-use Digest;
 use Crypt::RC4;
 
 our $ZLIBID = "zlb\x{1a}";
