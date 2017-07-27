@@ -49,6 +49,10 @@ my $inno = Setup::Inno->new($filename);
 print("Installer version: " . $inno->Version . "\n");
 print("Number of files: " . $inno->FileCount . "\n");
 
+if (!$inno->VerifyPassword($password)) {
+	print("WARNING: Invalid password specified. Extraction may fail when files are encrypted.\n");
+}
+
 if ($mode eq 'list') {
 	for (my $i = 0; $i < $inno->FileCount; $i++) {
 		my $file = $inno->FileInfo($i);
@@ -57,49 +61,45 @@ if ($mode eq 'list') {
 		}
 	}
 } elsif ($mode eq 'extract') {
-	if (!$inno->VerifyPassword($password)) {
-		print("Invalid password specified.\n");
-	} else {
-		for my $i (map({ $inno->FindFiles($_) } @patterns)) {
-			my $file = $inno->FileInfo($i);
-			if ($file->{Type} eq 'App') {
-				eval {
-					printf("%u: %s %s %u %s %s%s...", $i, $file->{Name}, $file->{Type}, $file->{Size}, $file->{Date}->format_cldr('yyyy-MM-dd HH:mm:ss'), $file->{Compressed} ? 'C' : '', $file->{Encrypted} ? 'E' : '');
-					my $name = $file->{Name};
-					if ($strip) {
-						$name =~ s#^.*?([^/]+)$#$1#;
-					} else {
-						$name =~ s#^[./]*##;
-					}
-					$name = catfile($outdir, $name);
-					my $path = dirname($name);
-					if (!stat($path)) {
-						make_path($path);
-					}
-					my $writeone = $overwriteall;
-					if (stat($name) && !$writeone) {
-						print(" $name exists. Overwrite? [y/N/a]");
-						my $response = <STDIN>;
-						if ($response =~ /^[yY]/) {
-							$writeone = 1;
-						} elsif ($response =~ /^[aA]/) {
-							$writeone = 1;
-							$overwriteall = 1;
-						}
-					} else {
-						$writeone = 1;
-					}
-					if ($writeone) {
-						my $data = $inno->ReadFile($i, $password);
-						my $output = IO::File->new($name, 'w') || die("Can't create $name: $@");
-						print($output $data);
-						print("done\n");
-					} else {
-						print("ignored\n");
-					}
-				} or do {
-					print("ERROR: $@");
+	for my $i (map({ $inno->FindFiles($_) } @patterns)) {
+		my $file = $inno->FileInfo($i);
+		if ($file->{Type} eq 'App') {
+			eval {
+				printf("%u: %s %s %u %s %s%s...", $i, $file->{Name}, $file->{Type}, $file->{Size}, $file->{Date}->format_cldr('yyyy-MM-dd HH:mm:ss'), $file->{Compressed} ? 'C' : '', $file->{Encrypted} ? 'E' : '');
+				my $name = $file->{Name};
+				if ($strip) {
+					$name =~ s#^.*?([^/]+)$#$1#;
+				} else {
+					$name =~ s#^[./]*##;
 				}
+				$name = catfile($outdir, $name);
+				my $path = dirname($name);
+				if (!stat($path)) {
+					make_path($path);
+				}
+				my $writeone = $overwriteall;
+				if (stat($name) && !$writeone) {
+					print(" $name exists. Overwrite? [y/N/a]");
+					my $response = <STDIN>;
+					if ($response =~ /^[yY]/) {
+						$writeone = 1;
+					} elsif ($response =~ /^[aA]/) {
+						$writeone = 1;
+						$overwriteall = 1;
+					}
+				} else {
+					$writeone = 1;
+				}
+				if ($writeone) {
+					my $data = $inno->ReadFile($i, $password);
+					my $output = IO::File->new($name, 'w') || die("Can't create $name: $@");
+					print($output $data);
+					print("done\n");
+				} else {
+					print("ignored\n");
+				}
+			} or do {
+				print("ERROR: $@");
 			}
 		}
 	}
