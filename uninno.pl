@@ -2,7 +2,6 @@
 
 use strict;
 use warnings;
-use diagnostics;
 use FindBin;
 use lib "$FindBin::Bin";
 use Setup::Inno;
