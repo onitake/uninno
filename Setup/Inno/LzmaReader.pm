@@ -19,15 +19,8 @@ sub new {
 	my $lclp = $lclppb - $pb * 45;
 	my $lp = int($lclp / 9);
 	my $lc = $lclp - $lp * 9;
-	my $transform;
-	if (defined($arch) && $arch ne '') {
-		if ($arch =~ /^(x86|powerpc|ia64|arm|armthumb|sparc)$/i) {
-			$transform = '--' . lc($0);
-		} else {
-			croak("Invalid architecture for jump transform: $arch");
-		}
-	} else {
-		$transform = '';
+	if (defined($arch)) {
+		carp("Jump transform not supported");
 	}
 	
 	# Read all data into memory
@@ -88,15 +81,8 @@ sub new {
 	} else {
 		$dictsize = 1 << ($dictsizeflag / 2 + 12);
 	}
-	my $transform;
-	if (defined($arch) && $arch ne '') {
-		if ($arch =~ /^(x86|powerpc|ia64|arm|armthumb|sparc)$/i) {
-			$transform = '--' . lc($0);
-		} else {
-			croak("Invalid architecture for jump transform: $arch");
-		}
-	} else {
-		$transform = '';
+	if (defined($arch)) {
+		carp("Jump transform not supported");
 	}
 	
 	# Read all data into memory
