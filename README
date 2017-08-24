@@ -84,10 +84,10 @@ These are:
  IO::Uncompress::Bunzip2
  Compress::Raw::Lzma
  Crypt::RC4
- 
+
 On Debian/Ubuntu Linux, use the following command to install all dependencies:
- 
-$ sudo apt install libswitch-perl libdatetime-perl libdigest-crc-perl libcompress-raw-lzma-perl libtext-glob-perl libio-stringy-perl libcrypt-rc4-perl xz-utils
+
+$ sudo apt install libswitch-perl libdatetime-perl libdigest-crc-perl libcompress-raw-lzma-perl libtext-glob-perl libio-stringy-perl libcrypt-rc4-perl
 
 
 4. Code
