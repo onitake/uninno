@@ -23,7 +23,7 @@ sub new {
 	my ($class, $filename) = @_;
 	
 	my $self = {
-		Input => IO::File->new($filename, '<'),
+		Input => IO::File->new($filename, '<') || croak("Can't open installer"),
 	};
 	bless($self, $class);
 
