@@ -1,16 +1,7 @@
 
-* uninno *
+# uninno
 
-0. Contents
-
-   1. Introduction
-   2. Copyright
-   3. Usage
-   4. Development
-   5. Links
-
-
-1. Introduction
+## Introduction
 
 uninno is a portable unpacking tool for Inno Setup (IS) installers.
 
@@ -28,47 +19,11 @@ for studying computer language parsing and automatic code generation.
 It will still be updated occasionally, when new Inno Setup versions are
 released.
 
-
-2. Copyright
-
-uninno and all its components are
-
-Copyright (C) 2012-2016 by Gregor Riepl <onitake@gmail.com>
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-    Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-    
-    Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-The data extraction routines are generated based on the Inno Setup source code,
-while the rest of the software was developed independently.
-See http://www.jrsoftware.org/files/is/license.txt for the Inno Setup license.
-
-No part of the project is affiliated with Inno Setup or its authors.
-
-
-3. Usage
+## Usage
 
 To just use uninno as a Inno Setup extractor, run the uninno.pl utility.
 
-$ ./uninno.pl setup.exe
+    $ ./uninno.pl setup.exe
 
 It will extract all files from the application part of the installer archvive
 and put them into ./app
@@ -77,20 +32,19 @@ Various Perl modules are required. You can either install them from CPAN or
 using your package manager (if available).
 
 These are:
- Switch
- DateTime
- Digest::CRC
- IO::Uncompress::AnyInflate
- IO::Uncompress::Bunzip2
- Compress::Raw::Lzma
- Crypt::RC4
+* Switch
+* DateTime
+* Digest::CRC
+* IO::Uncompress::AnyInflate
+* IO::Uncompress::Bunzip2
+* Compress::Raw::Lzma
+* Crypt::RC4
 
 On Debian/Ubuntu Linux, use the following command to install all dependencies:
 
-$ sudo apt install libswitch-perl libdatetime-perl libdigest-crc-perl libcompress-raw-lzma-perl libtext-glob-perl libio-stringy-perl libcrypt-rc4-perl
+    $ sudo apt install libswitch-perl libdatetime-perl libdigest-crc-perl libcompress-raw-lzma-perl libtext-glob-perl libio-stringy-perl libcrypt-rc4-perl
 
-
-4. Code
+## Code
 
 uninno consists of a bunch of Perl packages that handle different stages of the
 analysis and extractiong process. Dissection of the installer executable is
@@ -137,7 +91,8 @@ makestruct.pl can then be used to access this repository and to generate a
 new parser for a specific Inno Setup version.
 
 For example:
-$ ./makestruct.pl --src ./innosetup --version 5.5.0u
+
+    $ ./makestruct.pl --src ./innosetup --version 5.5.0u
 
 Versions with a u at the end are Unicode versions, which means that all strings
 are interpreted as UTF-16. Non-Unicode installers used to have their strings
@@ -149,10 +104,43 @@ when creating a parser for a new version.
 Output will go to Struct5500u.pm in this case, which needs to be put into
 Setup/Inno/ to make Inno.pm find it.
 
+## Links
 
-5. Links
+* Inno Setup: http://www.jrsoftware.org/isinfo.php
+* innounp: http://innounp.sourceforge.net/
+* Good Old Games: http://www.gog.com
+* Object Pascal Language Guide for Delphi: http://tinyurl.com/nowcn6c
 
-Inno Setup: http://www.jrsoftware.org/isinfo.php
-innounp: http://innounp.sourceforge.net/
-Good Old Games: http://www.gog.com
-Object Pascal Language Guide for Delphi: http://tinyurl.com/nowcn6c
+## Copyright
+
+uninno and all its components are
+
+    Copyright © 2012-2019 by Gregor Riepl <onitake@gmail.com>
+    All rights reserved.
+    
+    Redistribution and use in source and binary forms, with or without modification,
+    are permitted provided that the following conditions are met:
+    
+        Redistributions of source code must retain the above copyright notice,
+        this list of conditions and the following disclaimer.
+        
+        Redistributions in binary form must reproduce the above copyright notice,
+        this list of conditions and the following disclaimer in the documentation
+        and/or other materials provided with the distribution.
+    
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+    ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+    ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+The data extraction routines are generated based on the Inno Setup source code,
+while the rest of the software was developed independently.
+See http://www.jrsoftware.org/files/is/license.txt for the Inno Setup license.
+
+No part of the project is affiliated with Inno Setup or its authors.
