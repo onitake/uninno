@@ -21,9 +21,9 @@ sub new {
 	($digest == $headercrc) || croak("Invalid CRC in compression header");
 	
 	my $framesize = $blocksize + 4;
-	my ($offset, $bytes, $compressedsize, $packed) = (0, 0, 0, '');
+	my ($reloffset, $bytes, $compressedsize, $packed) = (0, 0, 0, '');
 	do {
-		$bytes = $framesize < $storedsize - $offset ? $framesize : $storedsize - $offset;
+		$bytes = $framesize < $storedsize - $reloffset ? $framesize : $storedsize - $reloffset;
 		if ($bytes >= 4) {
 			$handle->read(my $indata, $bytes);
 			my $blockcrc = unpack('L<', substr($indata, 0, 4));
@@ -34,10 +34,10 @@ sub new {
 				croak("Invalid CRC in block");
 			}
 			$packed .= $data;
-			$offset += $bytes;
+			$reloffset += $bytes;
 			$compressedsize += $bytes - 4;
 		}
-	} while ($bytes > 0 && $offset < $storedsize);
+	} while ($bytes > 0 && $reloffset < $storedsize);
 	
 	$handle = IO::File->new(\$packed, 'r') || croak("Can't create file handle for packed data: $!");
 	
