@@ -211,9 +211,9 @@ sub ReadFile {
 	if ($self->DiskSpanning()) {
 		my @slices;
 		for my $slice ($location->{FirstSlice}..$location->{LastSlice}) {
-			push(@slices, $self->DiskInfo->[$slice]);
+			push(@slices, $self->DiskInfo()->[$slice]);
 		}
-		my $info = $self->DiskInfo->[$location->{FirstSlice}];
+		my $info = $self->DiskInfo()->[$location->{FirstSlice}];
 		return $self->{Interpreter}->ReadFile($info->{Input}, $setup0->{Header}, $location, 0, $password, @slices);
 	} else {
 		#$self->{Input}->seek($self->Offset1(), Fcntl::SEEK_SET);
