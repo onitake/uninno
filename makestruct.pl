@@ -63,11 +63,11 @@ sub checkout {
 sub preprocess {
 	my ($data) = @_;
 	if ($unicode) {
-		$$data =~ s/{\$IFDEF UNICODE}(.*?)({\$ELSE}(.*?))?{\$ENDIF}/$1/gs;
-		$$data =~ s/{\$IFNDEF UNICODE}(.*?)({\$ELSE}(.*?))?{\$ENDIF}/$3/gs;
+		$$data =~ s/\{\$IFDEF UNICODE\}(.*?)(\{\$ELSE\}(.*?))?\{\$ENDIF\}/$1/gs;
+		$$data =~ s/\{\$IFNDEF UNICODE\}(.*?)(\{\$ELSE\}(.*?))?\{\$ENDIF\}/$3/gs;
 	} else {
-		$$data =~ s/{\$IFNDEF UNICODE}(.*?)({\$ELSE}(.*?))?{\$ENDIF}/$1/gs;
-		$$data =~ s/{\$IFDEF UNICODE}(.*?)({\$ELSE}(.*?))?{\$ENDIF}/$3/gs;
+		$$data =~ s/\{\$IFNDEF UNICODE\}(.*?)(\{\$ELSE\}(.*?))?\{\$ENDIF\}/$1/gs;
+		$$data =~ s/\{\$IFDEF UNICODE\}(.*?)(\{\$ELSE\}(.*?))?\{\$ENDIF\}/$3/gs;
 	}
 	$$data =~ s#//[^\n]*\n#\n#gs;
 }
