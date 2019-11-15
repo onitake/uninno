@@ -48,13 +48,14 @@ sub SetupBinaries {
 # Disk slice handling was new in 4.0.x, the exact version is unknown, but we support it from 4.0.0
 sub DiskInfo {
 	my ($self, $setup, $header) = @_;
-	my $basedir = dirname($setup);
+	my ($basename, $basedir, $suffix) = fileparse($setup, '.exe');
 	opendir(my $dir, $basedir);
-	my $basename = $setup;
-	$basename =~ s/^.*\/(.+)\.exe$/$1/g;
-	my @unsorted = grep(/^$basename-[0-9]+\.bin$/, readdir($dir));
+	my @unsorted = grep(/^\Q$basename\E-[0-9]+\.bin$/, readdir($dir));
 	closedir($dir);
-	my @bins = map({ $basedir . '/' . $_ } sort({ $a =~ /-([0-9]+)\.bin$/; my $first = $1; $b =~ /-([0-9]+)\.bin$/; my $second = $1; $first cmp $second; } @unsorted));
+	if (@unsorted < 1) {
+		croak("Can't find any matching disk files for multi-disk archive");
+	}
+	my @bins = map({ $basedir . $_ } sort({ $a =~ /-([0-9]+)\.bin$/; my $first = $1; $b =~ /-([0-9]+)\.bin$/; my $second = $1; $first cmp $second; } @unsorted));
 	my @ret = ();
 	my $start = 0;
 	my $disk = 0;
