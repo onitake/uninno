@@ -281,7 +281,14 @@ sub SetupRun {
 
 sub SetupFileLocations {
 	my ($self, $struct, $count) = @_;
-	return [ map { $struct->TSetupFileLocationEntry() } (0..$count - 1) ];
+	return [ map {
+		my $entry = $struct->TSetupFileLocationEntry();
+		# StartOffset should actually be an unsigned type - we can't address full 4GB files like this.
+		# This has worked in InnoSetup because they implement their Seek function with a Cardinal offset (which is unsigned).
+		# The compiler should report the signed/unsigned mismatch instead of typecasting, but it looks like it's being ignored.
+		$entry->{StartOffset} = unpack('L', pack('l', $entry->{StartOffset}));
+		$entry;
+	} (0..$count - 1) ];
 }
 
 # Verifies that a supplied password is correct
