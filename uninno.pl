@@ -1,7 +1,17 @@
 #!/usr/bin/perl
 
+# Set to 1 to enable debugging mode
+our $DEBUG = 0;
+
 use strict;
 use warnings;
+use diagnostics;
+if ($DEBUG) {
+	enable diagnostics;
+} else {
+	disable diagnostics;
+}
+
 use FindBin;
 use lib "$FindBin::Bin";
 use Setup::Inno;
@@ -52,6 +62,45 @@ if (!$inno->VerifyPassword($password)) {
 	print("WARNING: Invalid password specified. Extraction may fail when files are encrypted.\n");
 }
 
+sub extract {
+	my ($i, $file) = @_;
+	printf("%u: %s %s %u %s %s%s...", $i, $file->{Name}, $file->{Type}, $file->{Size}, $file->{Date}->format_cldr('yyyy-MM-dd HH:mm:ss'), $file->{Compressed} ? 'C' : '', $file->{Encrypted} ? 'E' : '');
+	my $name = $file->{Name};
+	if ($strip) {
+		$name =~ s#^.*?([^/]+)$#$1#;
+	} else {
+		$name =~ s#^[./]*##;
+	}
+	$name = catfile($outdir, $name);
+	my $path = dirname($name);
+	if (!stat($path)) {
+		make_path($path);
+	}
+	my $writeone = $overwriteall;
+	if (stat($name) && !$writeone) {
+		print(" $name exists. Overwrite? [y/N/a]");
+		my $response = <STDIN>;
+		if ($response =~ /^[yY]/) {
+			$writeone = 1;
+		} elsif ($response =~ /^[aA]/) {
+			$writeone = 1;
+			$overwriteall = 1;
+		}
+	} else {
+		$writeone = 1;
+	}
+	if ($writeone) {
+		my $data = $inno->ReadFile($i, $password);
+		my $output = IO::File->new($name, 'w') || die("Can't create $name: $@");
+		binmode($output);
+		print($output $data);
+		undef($output);
+		print("done\n");
+	} else {
+		print("ignored\n");
+	}
+}
+
 if ($mode eq 'list') {
 	for (my $i = 0; $i < $inno->FileCount; $i++) {
 		my $file = $inno->FileInfo($i);
@@ -63,42 +112,14 @@ if ($mode eq 'list') {
 	for my $i (map({ $inno->FindFiles($_) } @patterns)) {
 		my $file = $inno->FileInfo($i);
 		if ($file->{Type} eq 'App') {
-			eval {
-				printf("%u: %s %s %u %s %s%s...", $i, $file->{Name}, $file->{Type}, $file->{Size}, $file->{Date}->format_cldr('yyyy-MM-dd HH:mm:ss'), $file->{Compressed} ? 'C' : '', $file->{Encrypted} ? 'E' : '');
-				my $name = $file->{Name};
-				if ($strip) {
-					$name =~ s#^.*?([^/]+)$#$1#;
-				} else {
-					$name =~ s#^[./]*##;
+			if ($DEBUG) {
+				extract($i, $file);
+			} else {
+				eval {
+					extract($i, $file);
+				} or do {
+					print("ERROR: $@");
 				}
-				$name = catfile($outdir, $name);
-				my $path = dirname($name);
-				if (!stat($path)) {
-					make_path($path);
-				}
-				my $writeone = $overwriteall;
-				if (stat($name) && !$writeone) {
-					print(" $name exists. Overwrite? [y/N/a]");
-					my $response = <STDIN>;
-					if ($response =~ /^[yY]/) {
-						$writeone = 1;
-					} elsif ($response =~ /^[aA]/) {
-						$writeone = 1;
-						$overwriteall = 1;
-					}
-				} else {
-					$writeone = 1;
-				}
-				if ($writeone) {
-					my $data = $inno->ReadFile($i, $password);
-					my $output = IO::File->new($name, 'w') || die("Can't create $name: $@");
-					print($output $data);
-					print("done\n");
-				} else {
-					print("ignored\n");
-				}
-			} or do {
-				print("ERROR: $@");
 			}
 		}
 	}
