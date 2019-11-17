@@ -1,4 +1,3 @@
-
 # uninno
 
 ## Introduction
@@ -6,18 +5,22 @@
 uninno is a portable unpacking tool for Inno Setup (IS) installers.
 
 It was originally conceived as a means to extract the data files from
-GoG (Good old Games) installer packages. Back then, these games were
-usually only for offered for the Microsoft Windows operating system.
-This was a bit disappointing, because there existed alternative means
-of playing these games on other platforms. Unfortunately, there was no
-easy way to obtain the contents of these packages, so the author started
-writing a new tool in a portable script language, Perl.
+[GOG.com (Good Old Games)](https://www.gog.com/) installer packages.
+Back in 2008, when GOG was launched, only Microsoft Windows versions
+of older PC video games were offered. For many of these games, there exist
+emulators or engines rewrites that allow them to be played on other
+operating systems or CPU architectures.
+
+To allow GOG customers to play these games without requiring a Windows
+system or Windows emulator, uninno was created. It is written in Perl
+and should run on any platform that has a moderately recent Perl
+interpreter available.
 
 After initial success, uninno also became a bit of a research project
 for studying computer language parsing and automatic code generation.
 
-It will still be updated occasionally, when new Inno Setup versions are
-released.
+When new InnoSetup versions are released, support for them will
+occasionally be added to uninno.
 
 ## Usage
 
