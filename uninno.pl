@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 # Set to 1 to enable debugging mode
-our $DEBUG = 0;
+our $DEBUG = 1;
 
 use strict;
 use warnings;
@@ -27,7 +27,7 @@ $Text::Glob::strict_wildcard_slash = 0;
 # Enable autoflush on stdout
 $| = 1;
 
-my ($mode, $outdir, $strip, $help, $overwriteall, $password) = ('extract', 'app', 0, 0, 0, undef);
+my ($mode, $outdir, $strip, $help, $overwriteall, $password, $type) = ('extract', 'app', 0, 0, 0, undef, 'app');
 GetOptions(
 	"h" => \$help,
 	"l" => sub { $mode = 'list' },
@@ -35,6 +35,7 @@ GetOptions(
 	"x" => sub { $mode = 'extract'; $strip = 1 },
 	"d=s" => \$outdir,
 	"p=s" => \$password,
+	"t=s" => \$type,
 );
 if ($help || @ARGV < 1) {
 	print(STDERR "Usage: extract.pl [-l | -e | -x] [-h] [-d path] setup.exe [file.ext] [file.*] ...\n");
@@ -47,6 +48,8 @@ if ($help || @ARGV < 1) {
 	print(STDERR "-x  Extract files with stripped path\n");
 	print(STDERR "-d  Specify output path (default: ./app/)\n");
 	print(STDERR "-p  Specify the decryption password\n");
+	print(STDERR "-t  Select which destination type is considered (default: app)\n");
+	print(STDERR "    Known destination types: app, tmp, commonappdata, code, uninstexe, regsvrexe\n");
 	exit(1);
 }
 
@@ -104,23 +107,29 @@ sub extract {
 if ($mode eq 'list') {
 	for (my $i = 0; $i < $inno->FileCount; $i++) {
 		my $file = $inno->FileInfo($i);
-		if ($file->{Type} eq 'App') {
+		if ($file->{Type} eq $type) {
 			printf("%u: %s %s %u %s %s%s\n", $i, $file->{Name}, $file->{Type}, $file->{Size}, $file->{Date}->format_cldr('yyyy-MM-dd HH:mm:ss'), $file->{Compressed} ? 'C' : '', $file->{Encrypted} ? 'E' : '');
 		}
 	}
 } elsif ($mode eq 'extract') {
 	for my $i (map({ $inno->FindFiles($_) } @patterns)) {
 		my $file = $inno->FileInfo($i);
-		if ($file->{Type} eq 'App') {
-			if ($DEBUG) {
-				extract($i, $file);
-			} else {
-				eval {
+		if (defined($file->{Type})) {
+			if ($file->{Type} eq $type) {
+				if ($DEBUG) {
 					extract($i, $file);
-				} or do {
-					print("ERROR: $@");
+				} else {
+					eval {
+						extract($i, $file);
+					} or do {
+						print("ERROR: $@");
+					}
 				}
 			}
+		} elsif ($DEBUG) {
+			use Data::Dumper;
+			print("Unknown file:\n");
+			print(Dumper($file));
 		}
 	}
 }

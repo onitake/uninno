@@ -145,50 +145,37 @@ sub FileInfo {
 	my $location = $locations->[$file->{LocationEntry}];
 	#return { File => $file, Location => $location };
 	my $type;
-	my $name;
+	my $name = $file->{DestName};
 	given ($file->{FileType}) {
 		when (/UserFile/i) {
-			$name = $file->{DestName};
-			given ($name) {
-				when (/^{app}/i) {
-					$type = 'App';
-				}
-				when (/^{tmp}/i) {
-					$type = 'Tmp';
-				}
-				when (/^{code:[a-zA-Z0-9_|]*?}/i) {
-					$type = 'Code';
-				}
-				when (/^{(.*?)}/i) {
-					$type = $1;
-				}
-				default {
-					$type = $name;
-				}
+			if ($name =~ /^{code:[a-zA-Z0-9_|]*?}/i) {
+				$type = 'code';
+			} elsif ($name =~ /^{(.*?)}/i) {
+				$type = $1;
+				#print("Generic destination type: $type\n");
+			} else {
+				$type = 'unknown';
+				print("Unsupported destination: $name\n");
 			}
 			$name =~ s/^{.*?}\\//;
 			$name =~ s#\\#/#g;
 		}
 		when (/UninstExe/i) {
-			$type = 'UninstExe';
+			$type = 'uninstexe';
 			# TODO: Find out if the name of the uninstaller exe is found somewhere else
-			if ($file->{DestName}) {
-				$name = $file->{DestName};
-			} else {
+			if (!$file->{DestName}) {
 				$name = $DefaultUninstallExeName;
 			}
 		}
 		when (/RegSvrExe/i) {
-			$type = 'RegSvrExe';
-			if ($file->{DestName}) {
-				$name = $file->{DestName};
-			} else {
+			$type = 'regsvrexe';
+			if (!$file->{DestName}) {
 				$name = $DefaultRegSvrExeName;
 			}
 		}
 		default {
-			$type = 'Unknown';
-			$name = 'unknown';
+			$type = 'unknown';
+			print("Unknown file type: $file->{FileType}\n");
 		}
 	}
 	return {
