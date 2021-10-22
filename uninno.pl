@@ -50,6 +50,7 @@ if ($help || @ARGV < 1) {
 	print(STDERR "-p  Specify the decryption password\n");
 	print(STDERR "-t  Select which destination type is considered (default: app)\n");
 	print(STDERR "    Known destination types: app, tmp, commonappdata, code, uninstexe, regsvrexe\n");
+	print(STDERR "    Use 'all' to ignore the type\n");
 	exit(1);
 }
 
@@ -107,7 +108,7 @@ sub extract {
 if ($mode eq 'list') {
 	for (my $i = 0; $i < $inno->FileCount; $i++) {
 		my $file = $inno->FileInfo($i);
-		if ($file->{Type} eq $type) {
+		if ($type eq 'all' or $file->{Type} eq $type) {
 			printf("%u: %s %s %u %s %s%s\n", $i, $file->{Name}, $file->{Type}, $file->{Size}, $file->{Date}->format_cldr('yyyy-MM-dd HH:mm:ss'), $file->{Compressed} ? 'C' : '', $file->{Encrypted} ? 'E' : '');
 		}
 	}
