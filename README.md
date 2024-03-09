@@ -3,24 +3,26 @@
 ## Introduction
 
 uninno is a portable unpacking tool for Inno Setup (IS) installers.
-
 It was originally conceived as a means to extract the data files from
 [GOG.com (Good Old Games)](https://www.gog.com/) installer packages.
-Back in 2008, when GOG was launched, only Microsoft Windows versions
-of older PC video games were offered. For many of these games, there exist
-emulators or engines rewrites that allow them to be played on other
-operating systems or CPU architectures.
 
-To allow GOG customers to play these games without requiring a Windows
-system or Windows emulator, uninno was created. It is written in Perl
-and should run on any platform that has a moderately recent Perl
-interpreter available.
+Back in 2008, when GOG launched, they only offered repackaged versions
+of older DOS and Windows games for modern Windows systems.
+Many of these games can be played with emulators or engine rewrites on
+a wide variety of systems, but this requires the game data in raw form.
 
-After initial success, uninno also became a bit of a research project
-for studying computer language parsing and automatic code generation.
+With the help of uninno, GOG customers can play such games without
+requiring access to a Windows system or Windows emulator.
+
+Recently, GOG also started supporting Linux and MacOS, and some games that
+come packaged with an emulator (such as ScummVM) can also be downloaded
+for non-Windows systems now.
 
 When new InnoSetup versions are released, support for them will
-occasionally be added to uninno.
+occasionally be added to uninno. Note that uninno does not implement all
+features that installers may use. In particular, more recent GOG.com
+installers no longer work, because they incorporate custom code to
+process the unpacked files.
 
 ## Usage
 
@@ -111,14 +113,14 @@ Setup/Inno/ to make Inno.pm find it.
 
 * Inno Setup: http://www.jrsoftware.org/isinfo.php
 * innounp: http://innounp.sourceforge.net/
-* Good Old Games: http://www.gog.com
-* Object Pascal Language Guide for Delphi: http://tinyurl.com/nowcn6c
+* GOG.com: http://www.gog.com
+* Object Pascal Language Guide for Delphi: https://web.archive.org/web/20160313055504/http://portal.aauj.edu/portal_resources/downloads/programming/delphi_object_pascal_language_guide.pdf
 
 ## Copyright
 
 uninno and all its components are
 
-    Copyright © 2012-2019 by Gregor Riepl <onitake@gmail.com>
+    Copyright © 2012-2024 by Gregor Riepl <onitake@gmail.com>
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without modification,
