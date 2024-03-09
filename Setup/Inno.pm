@@ -157,8 +157,10 @@ sub FileInfo {
 				$type = 'unknown';
 				print("Unsupported destination: $name\n");
 			}
-			$name =~ s/^{.*?}\\//;
+			# replace path separators
 			$name =~ s#\\#/#g;
+			# strip prefix
+			$name =~ s#^{.*?}/##;
 		}
 		when (/UninstExe/i) {
 			$type = 'uninstexe';
