@@ -22,10 +22,10 @@ use File::Basename;
 use File::Path 'make_path';
 use File::Spec::Functions;
 
-$Text::Glob::strict_wildcard_slash = 0;
-
 # Enable autoflush on stdout
 $| = 1;
+# Ignore path separators on glob
+$Text::Glob::strict_wildcard_slash = 0;
 
 my ($mode, $outdir, $strip, $help, $overwriteall, $password, $type) = ('extract', 'app', 0, 0, 0, undef, 'app');
 GetOptions(
@@ -55,7 +55,7 @@ if ($help || @ARGV < 1) {
 }
 
 my $filename = shift(@ARGV);
-my @patterns = @ARGV > 0 ? map({ glob_to_regex($_) } @ARGV) : glob_to_regex('*.*');
+my @patterns = @ARGV > 0 ? map({ glob_to_regex($_) } @ARGV) : glob_to_regex('*');
 
 my $inno = Setup::Inno->new($filename);
 
